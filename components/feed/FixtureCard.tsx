@@ -1,24 +1,24 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { FeedItem } from "@/constants/mockFeed";
 import { useTheme } from "@/theme/ThemeProvider";
 import { resolveAvatarShapes } from "@/utils/resolveAvatarShape";
+import React from "react";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { FeedCard } from "./FeedCard";
 import { FeedCardHeader } from "./FeedCardHeader";
 
 type FixtureCardProps = {
   item: FeedItem;
+  style?: StyleProp<ViewStyle>; // <- updated type
 };
 
-export function FixtureCard({ item }: FixtureCardProps) {
+export function FixtureCard({ item, style }: FixtureCardProps) {
   const { colors } = useTheme();
   const shapes = resolveAvatarShapes(item);
 
   return (
-    <FeedCard>
+    <FeedCard style={style}>
       {/* Header */}
       <FeedCardHeader
         groupName={item.groupName}

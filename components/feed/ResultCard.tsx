@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -11,7 +11,7 @@ import { FeedCardHeader } from "./FeedCardHeader";
 
 type ResultCardProps = {
   item: FeedItem;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>; // <- fixed type
 };
 
 export function ResultCard({ item, style }: ResultCardProps) {
@@ -33,6 +33,7 @@ export function ResultCard({ item, style }: ResultCardProps) {
       />
 
       <View style={styles.matchRow}>
+        {/* Your avatar */}
         <View style={styles.avatarColumn}>
           <Avatar
             uri={item.yourAvatar}
@@ -44,10 +45,12 @@ export function ResultCard({ item, style }: ResultCardProps) {
           </Text>
         </View>
 
+        {/* Score */}
         <Text style={[styles.score, { color: colors.textPrimary }]}>
           {item.score ?? "0 : 0"}
         </Text>
 
+        {/* Opponent avatar */}
         <View style={styles.avatarColumn}>
           <Avatar
             uri={item.opponentAvatar}
@@ -60,12 +63,14 @@ export function ResultCard({ item, style }: ResultCardProps) {
         </View>
       </View>
 
+      {/* Outcome badges */}
       <View style={styles.badgeRow}>
         {item.outcome === "WIN" && <Badge label="🏆" type="medal" />}
         {item.outcome === "LOSS" && <Badge label="❌" type="status" />}
         {item.outcome === "DRAW" && <Badge label="DRAW" type="status" />}
       </View>
 
+      {/* Outcome text */}
       <Text style={[styles.meta, { color: colors.accent }]}>{outcomeText}</Text>
     </FeedCard>
   );
@@ -92,6 +97,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     marginHorizontal: 12,
+    textAlign: "center",
   },
   badgeRow: {
     flexDirection: "row",

@@ -1,9 +1,9 @@
 import { useTheme } from "@/theme/ThemeProvider";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
 type FeedCardProps = {
   children: React.ReactNode;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>; // <- allow StyleProp
 };
 
 export function FeedCard({ children, style }: FeedCardProps) {

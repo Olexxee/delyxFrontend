@@ -33,7 +33,10 @@ export function FeedList() {
       {groupedFeed.map((group) => (
         <View
           key={group.groupName}
-          style={[styles.groupSection, { backgroundColor: colors.textPrimary }]}
+          style={[
+            styles.groupSection,
+            { backgroundColor: colors.surfaceLight },
+          ]}
         >
           {/* Group Header */}
           <FeedCardHeader
