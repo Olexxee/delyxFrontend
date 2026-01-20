@@ -1,4 +1,4 @@
-import { AuthContainer } from "./authContainer";
+import  AuthContainer from "./authContainer";
 
 export default function AuthLayout() {
   return <AuthContainer />;

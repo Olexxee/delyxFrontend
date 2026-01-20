@@ -27,7 +27,9 @@ export async function loginUser(payload: LoginPayload): Promise<User> {
     return response.data.user;
   } catch (error: any) {
     // error.message comes from the Axios interceptor
-    throw new Error(error.message || 'Login failed');
+     throw new Error(
+      error.response?.data?.message || error.message || 'Registration failed'
+    );
   }
 }
 
@@ -36,9 +38,12 @@ export async function registerUser(payload: RegisterPayload): Promise<User> {
     const response = await api.post<AuthResponse>('/auth/signup', payload);
     return response.data.user;
   } catch (error: any) {
-    throw new Error(error.message || 'Registration failed');
+    throw new Error(
+      error.response?.data?.message || error.message || 'Registration failed'
+    );
   }
 }
+
 
 /* ================= OTHER ================= */
 
