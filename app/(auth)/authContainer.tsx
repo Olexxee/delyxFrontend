@@ -6,11 +6,11 @@ import { Shapes } from "@/theme/shapes";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useContext, useEffect, useRef, useState } from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Animated,
     Dimensions,
     KeyboardAvoidingView,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -38,6 +38,7 @@ export function AuthContainer() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState('');
 
   const animValue = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -121,28 +122,45 @@ export function AuthContainer() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) return;
-    setLoading(true);
-    try {
-      const { loginUser } = await import("@/api/apiService");
-      const user = await loginUser({ email, password });
-      setUser(user);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!email || !password) {
+    setError('Email and password are required');
+    return;
+  }
 
-  const handleRegister = async () => {
-    if (!name || !email || !password) return;
-    setLoading(true);
-    try {
-      const { registerUser } = await import("@/api/apiService");
-      const user = await registerUser({ name, email, password });
-      setUser(user);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  setError('');
+
+  try {
+    const { loginUser } = await import('@/');
+    const user = await loginUser({ email, password });
+    setUser(user);
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+ const handleRegister = async () => {
+  if (!name || !email || !password) {
+    setError('Name, email, and password are required');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const { registerUser } = await import('@/api/apiService');
+    const user = await registerUser({ name, email, password });
+    setUser(user);
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const opacityLogin = animValue.interpolate({
     inputRange: [0, 1],
@@ -233,6 +251,13 @@ export function AuthContainer() {
                       Sign in to your account
                     </Text>
 
+                    {/* Display error if exists */}
+{error ? (
+  <Text style={{ color: 'red', marginBottom: 16, textAlign: 'center' }}>
+    {error}
+  </Text>
+) : null}
+
                     <AppInput
                       placeholder="Email Address"
                       value={email}
@@ -306,8 +331,15 @@ export function AuthContainer() {
                       Join Delyx today
                     </Text>
 
+                    {/* Display error if exists */}
+{error ? (
+  <Text style={{ color: 'red', marginBottom: 16, textAlign: 'center' }}>
+    {error}
+  </Text>
+) : null}
+
                     <AppInput
-                      placeholder="Full Name"
+                      placeholder="Username"
                       value={name}
                       onChangeText={setName}
                       icon="user"
@@ -410,3 +442,4 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "700", marginBottom: 8 },
   subtitle: { fontSize: 16, marginBottom: 24 },
 });
+
