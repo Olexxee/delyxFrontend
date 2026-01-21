@@ -1,23 +1,17 @@
 import { useTheme } from "@/theme/ThemeProvider";
 import { Tabs } from "expo-router";
-import type { LucideIcon } from "lucide-react-native";
 import { Home, Trophy, User, Users } from "lucide-react-native";
-import React, { useEffect, useRef } from "react";
 import { Animated } from "react-native";
+import React, { useEffect, useRef } from "react";
 
 type AnimatedIconProps = {
-  Icon: LucideIcon;
+  Icon: any;
   focused: boolean;
   activeColor: string;
   inactiveColor: string;
 };
 
-function AnimatedIcon({
-  Icon,
-  focused,
-  activeColor,
-  inactiveColor,
-}: AnimatedIconProps) {
+function AnimatedIcon({ Icon, focused, activeColor, inactiveColor }: AnimatedIconProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -42,7 +36,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: false,
+        headerShown: false, // we'll render ScreenHeader inside screens
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
@@ -50,58 +44,27 @@ export default function TabLayout() {
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         tabBarIcon: ({ focused }) => {
           switch (route.name) {
             case "feed":
-              return (
-                <AnimatedIcon
-                  Icon={Home}
-                  focused={focused}
-                  activeColor={colors.accent}
-                  inactiveColor={colors.textSecondary}
-                />
-              );
+              return <AnimatedIcon Icon={Home} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
             case "tournaments":
-              return (
-                <AnimatedIcon
-                  Icon={Trophy}
-                  focused={focused}
-                  activeColor={colors.accent}
-                  inactiveColor={colors.textSecondary}
-                />
-              );
+              return <AnimatedIcon Icon={Trophy} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
             case "groups":
-              return (
-                <AnimatedIcon
-                  Icon={Users}
-                  focused={focused}
-                  activeColor={colors.accent}
-                  inactiveColor={colors.textSecondary}
-                />
-              );
+              return <AnimatedIcon Icon={Users} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
             case "profile":
-              return (
-                <AnimatedIcon
-                  Icon={User}
-                  focused={focused}
-                  activeColor={colors.accent}
-                  inactiveColor={colors.textSecondary}
-                />
-              );
+              return <AnimatedIcon Icon={User} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
             default:
               return null;
           }
         },
       })}
     >
-      <Tabs.Screen name="feed" options={{ title: "Feed" }} />
-      <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
-      <Tabs.Screen name="groups" options={{ title: "Groups" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen name="feed" />
+      <Tabs.Screen name="tournaments" />
+      <Tabs.Screen name="groups" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }

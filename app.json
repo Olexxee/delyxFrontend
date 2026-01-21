@@ -11,12 +11,12 @@
     "ios": {
       "supportsTablet": true
     },
-     "expo": {
-    "scheme": "delyx",
-    "experiments": {
-      "typedRoutes": true
-    }
-  },
+    "expo": {
+      "scheme": "delyx",
+      "experiments": {
+        "typedRoutes": true
+      }
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -44,7 +44,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

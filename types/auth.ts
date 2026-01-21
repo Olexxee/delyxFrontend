@@ -1,8 +1,10 @@
 export interface User {
   id: string;
-  name: string;
+  username: string;
   email: string;
   avatar?: string;
+  role: "user" | "admin";
+  verified: boolean;
 }
 
 export interface AuthResponse {
@@ -11,7 +13,7 @@ export interface AuthResponse {
 }
 
 export interface RegisterPayload {
-  name: string;
+  username: string;
   email: string;
   password: string;
 }

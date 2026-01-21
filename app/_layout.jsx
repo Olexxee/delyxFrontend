@@ -1,7 +1,8 @@
-import { UserContext } from "@/authContext/UserContext";
+import { useContext, useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useContext, useEffect, useState } from "react";
+
+import { UserContext } from "@/authContext/UserContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -10,11 +11,12 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    async function init() {
+    const init = async () => {
       await restoreSession();
       setReady(true);
-      SplashScreen.hideAsync();
-    }
+      await SplashScreen.hideAsync();
+    };
+
     init();
   }, []);
 
@@ -22,7 +24,11 @@ export default function RootLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!user ? <Stack.Screen name="(auth)" /> : <Stack.Screen name="(tabs)" />}
+      {!user ? (
+        <Stack.Screen name="(auth)" />
+      ) : (
+        <Stack.Screen name="(tabs)" />
+      )}
     </Stack>
   );
 }
