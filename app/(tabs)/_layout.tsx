@@ -63,7 +63,7 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="feed" />
       <Tabs.Screen name="tournaments" />
-      <Tabs.Screen name="groups" />
+      <Tabs.Screen name="group" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

@@ -32,4 +32,14 @@ export async function getFeed() {
   }
 }
 
+// Group related APIs can be added here similarly
+export async function getMyGroups() {
+  try {
+    const response = await api.get("/groups/my-groups");
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch groups");
+  }
+}
+
 export default api;

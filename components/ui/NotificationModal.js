@@ -1,20 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 
-interface Notification {
-  _id: string;
-  title: string;
-  message: string;
-  createdAt: string;
-  read: boolean;
-}
-
-interface NotificationsModalProps {
-  notifications: Notification[];
-  markAsRead: (id: string) => void;
-  onClose: () => void;
-}
-
-export function NotificationsModal({ notifications, markAsRead, onClose }: NotificationsModalProps) {
+export function NotificationsModal({ notifications, markAsRead, onClose }) {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={onClose} style={styles.closeButton}>

@@ -12,7 +12,7 @@ import messaging from "@react-native-firebase/messaging";
 
 import { UserContext } from "@/authContext/UserContext";
 import api from "@/api/api";
-import { NotificationsModal } from "@/components/ui/Notification"; 
+import { NotificationsModal } from "@/components/ui/NotificationModal";
 import { Avatar } from "@/components/ui/Avatar";
 import { useTheme } from "@/theme/ThemeProvider";
 

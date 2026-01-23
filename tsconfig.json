@@ -13,5 +13,5 @@
     "expo-env.d.ts",
     "app/_layout.jsx",
     "authContext/UserContext.ts"
-, "api/useDeviceToken.js", "api/messaging.jsx"  ]
+, "api/useDeviceToken.js", "api/messaging.jsx", "components/ui/NotificationModal.js", "components/group/GroupListScreen.tsx", "components/group/GroupCard.jsx"  ]
 }
