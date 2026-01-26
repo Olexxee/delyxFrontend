@@ -1,105 +1,154 @@
-import React, { useEffect, useState } from "react";
-import { FlatList, StyleSheet, ActivityIndicator, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context"; // <- import SafeAreaView
-import api from "@/api/api";
+import React, { useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  View,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react-native";
+import { getMyGroups, createGroupApi } from "@/api/apiService";
 import { GroupCard } from "./GroupCard";
-import { useRouter } from "expo-router";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useSocket } from "@/api/socketRegistry";
+import CreateGroupModal from "./CreateGroupModal";
 
-export const GroupListScreen = () => {
+export default function GroupListScreen() {
   const { colors } = useTheme();
-  const router = useRouter();
-  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // 1. FETCH GROUPS (With Cache Persistence)
+  const { 
+    data: groups = [], 
+    isLoading, 
+    isRefetching, 
+    refetch 
+  } = useQuery({
+    queryKey: ["groups"],
+    queryFn: async () => {
+      const res = await getMyGroups();
+      const data = res?.data;
+      if (!Array.isArray(data)) return [];
 
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/groups");
-      if (res.data.success) {
-        setGroups(res.data.data.map((g) => ({ ...g, unreadCount: 0 })));
-      }
-    } catch (err) {
-      console.error("Failed to fetch groups:", err);
-    } finally {
-      setLoading(false);
+      return data.map((g) => ({
+        id: g.id,
+        name: g.name,
+        avatar: g.avatar,
+        chatRoomId: g.chatRoomId || null,
+        lastMessage: g.lastMessage || null,
+        lastMessageAt: g.lastMessageAt || null,
+        unreadCount: 0,
+      }));
+    },
+  });
+
+  // 2. CREATE GROUP MUTATION
+  const mutation = useMutation({
+    mutationFn: (formData) => createGroupApi(formData),
+    onSuccess: () => {
+      // Refresh the group list immediately
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      setModalVisible(false);
+      Alert.alert("Success", "Group created successfully! 🎉");
+    },
+    onError: (error) => {
+      Alert.alert("Error", error.response?.data?.message || "Failed to create group");
     }
+  });
+
+  // 3. HANDLE FORM DATA SUBMISSION
+  const handleConfirm = async ({ name, image, privacy }) => {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("privacy", privacy);
+    
+    // Process image for Multer backend
+    if (image) {
+      const uriParts = image.split('.');
+      const fileType = uriParts[uriParts.length - 1];
+      
+      formData.append("avatar", {
+        uri: image,
+        name: `avatar.${fileType}`,
+        type: `image/${fileType}`,
+      });
+    }
+
+    mutation.mutate(formData);
   };
-
-  const handleGroupPress = (chatRoomId) => {
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.chatRoomId === chatRoomId ? { ...g, unreadCount: 0 } : g
-      )
-    );
-    // router.push(`/chat/${chatRoomId}`);
-  };
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewMessage = (msg) => {
-      setGroups((prev) =>
-        prev.map((g) =>
-          g.chatRoomId === msg.chatRoomId
-            ? {
-              ...g,
-              lastMessage: {
-                encryptedContent: msg.encryptedContent,
-                sender: msg.sender,
-                createdAt: msg.createdAt,
-              },
-              lastMessageAt: msg.createdAt,
-              unreadCount: (g.unreadCount || 0) + 1,
-            }
-            : g
-        )
-      );
-    };
-
-    socket.on("new_group_message", handleNewMessage);
-    return () => socket.off("new_group_message", handleNewMessage);
-  }, [socket]);
-
-  useEffect(() => {
-    fetchGroups();
-  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
-      {loading ? (
+      {isLoading && !isRefetching ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      ) : groups.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            No groups found.
-          </Text>
         </View>
       ) : (
         <FlatList
           data={groups}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <GroupCard group={item} onPress={handleGroupPress} />}
-          contentContainerStyle={{ paddingVertical: 8, paddingBottom: 16 }} // extra padding for bottom safe area
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <GroupCard 
+              group={item} 
+              onPress={(chatId) => console.log("Navigate to chat:", chatId)} 
+            />
+          )}
+          refreshControl={
+            <RefreshControl 
+              refreshing={isRefetching} 
+              onRefresh={refetch} 
+              tintColor={colors.accent} 
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.centered}>
+              <Text style={{ color: colors.textSecondary }}>No groups found.</Text>
+            </View>
+          }
+          contentContainerStyle={{ paddingVertical: 8, paddingBottom: 80 }}
         />
       )}
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.accent }]}
+        onPress={() => setModalVisible(true)}
+        activeOpacity={0.8}
+      >
+        <Plus color="#FFF" size={30} />
+      </TouchableOpacity>
+
+      {/* MODAL */}
+      <CreateGroupModal 
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)} 
+        onConfirm={handleConfirm}
+        isSubmitting={mutation.isPending}
+      />
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
 });

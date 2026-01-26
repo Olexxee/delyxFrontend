@@ -1,8 +1,10 @@
-import { useTheme } from "@/theme/ThemeProvider";
-import { Tabs } from "expo-router";
-import { Home, Trophy, User, Users } from "lucide-react-native";
+import React, { useEffect, useRef, useContext } from "react";
 import { Animated } from "react-native";
-import React, { useEffect, useRef } from "react";
+import { Tabs, Redirect } from "expo-router";
+import { Home, Trophy, User, Users } from "lucide-react-native";
+import { useTheme } from "@/theme/ThemeProvider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { UserContext } from "@/authContext/UserContext";
 
 type AnimatedIconProps = {
   Icon: any;
@@ -11,7 +13,12 @@ type AnimatedIconProps = {
   inactiveColor: string;
 };
 
-function AnimatedIcon({ Icon, focused, activeColor, inactiveColor }: AnimatedIconProps) {
+function AnimatedIcon({
+  Icon,
+  focused,
+  activeColor,
+  inactiveColor,
+}: AnimatedIconProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -21,7 +28,7 @@ function AnimatedIcon({ Icon, focused, activeColor, inactiveColor }: AnimatedIco
       tension: 160,
       useNativeDriver: true,
     }).start();
-  }, [focused, scale]);
+  }, [focused]);
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -30,31 +37,72 @@ function AnimatedIcon({ Icon, focused, activeColor, inactiveColor }: AnimatedIco
   );
 }
 
-export default function TabLayout() {
+export default function TabsLayout() {
+  const { user, isRestoring } = useContext(UserContext);
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // 🔐 Auth guard (this is the ONLY new logic)
+  if (isRestoring) return null;
+
+  if (!user) {
+    return <Redirect href="/(auth)/authContainer" />;
+  }
 
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: false, // we'll render ScreenHeader inside screens
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
         tabBarIcon: ({ focused }) => {
           switch (route.name) {
             case "feed":
-              return <AnimatedIcon Icon={Home} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
-            case "tournaments":
-              return <AnimatedIcon Icon={Trophy} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
-            case "groups":
-              return <AnimatedIcon Icon={Users} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
+              return (
+                <AnimatedIcon
+                  Icon={Home}
+                  focused={focused}
+                  activeColor={colors.accent}
+                  inactiveColor={colors.textSecondary}
+                />
+              );
+            case "group":
+              return (
+                <AnimatedIcon
+                  Icon={Users}
+                  focused={focused}
+                  activeColor={colors.accent}
+                  inactiveColor={colors.textSecondary}
+                />
+              );
+            case "tournament":
+              return (
+                <AnimatedIcon
+                  Icon={Trophy}
+                  focused={focused}
+                  activeColor={colors.accent}
+                  inactiveColor={colors.textSecondary}
+                />
+              );
             case "profile":
-              return <AnimatedIcon Icon={User} focused={focused} activeColor={colors.accent} inactiveColor={colors.textSecondary} />;
+              return (
+                <AnimatedIcon
+                  Icon={User}
+                  focused={focused}
+                  activeColor={colors.accent}
+                  inactiveColor={colors.textSecondary}
+                />
+              );
             default:
               return null;
           }
@@ -62,8 +110,8 @@ export default function TabLayout() {
       })}
     >
       <Tabs.Screen name="feed" />
-      <Tabs.Screen name="tournaments" />
       <Tabs.Screen name="group" />
+      <Tabs.Screen name="tournament" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

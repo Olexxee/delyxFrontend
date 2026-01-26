@@ -1,5 +1,5 @@
-import  AuthContainer from "./authContainer";
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
-  return <AuthContainer />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
