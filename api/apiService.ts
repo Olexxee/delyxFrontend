@@ -42,4 +42,31 @@ export async function getMyGroups() {
   }
 }
 
-export default api;
+export async function createGroup(name: string, image: string, privacy: string) {
+  try {
+    const response = await api.post("/groups/create", { name, image, privacy });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to create group");
+  }
+}
+
+// CHAT related APIs can be added here similarly
+export async function getChatMessages(chatRoomId: string) {
+  try {
+    const response = await api.get(`/chat/messages/${chatRoomId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch chat messages");
+  }
+}
+
+export async function getGroupAESKey(chatRoomId: string) {
+  try {
+    const response = await api.get(`/chat/room/${chatRoomId}/key`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch AES key");
+  }
+}
+

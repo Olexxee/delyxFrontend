@@ -47,7 +47,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
         return;
       }
 
-      activeSocket = io("https://irrational-calcite.outray.app", {
+      activeSocket = io("https://destructive-island.outray.app", {
         auth: { token },
         transports: ["websocket"],
         autoConnect: true,

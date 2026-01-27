@@ -3,16 +3,17 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Text,
   View,
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react-native";
-import { getMyGroups, createGroupApi } from "@/api/apiService";
+import { useRouter } from "expo-router";
+import { getMyGroups, createGroup, getGroupAESKey } from "@/api/apiService";
 import { GroupCard } from "./GroupCard";
 import { useTheme } from "@/theme/ThemeProvider";
 import CreateGroupModal from "./CreateGroupModal";
@@ -20,19 +21,15 @@ import CreateGroupModal from "./CreateGroupModal";
 export default function GroupListScreen() {
   const { colors } = useTheme();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
 
-  // 1. FETCH GROUPS (With Cache Persistence)
-  const { 
-    data: groups = [], 
-    isLoading, 
-    isRefetching, 
-    refetch 
-  } = useQuery({
+  // 1️⃣ Fetch groups
+  const { data: groups = [], isLoading, isRefetching, refetch } = useQuery({
     queryKey: ["groups"],
     queryFn: async () => {
       const res = await getMyGroups();
-      const data = res?.data;
+      const data = res?.data || [];
       if (!Array.isArray(data)) return [];
 
       return data.map((g) => ({
@@ -47,39 +44,72 @@ export default function GroupListScreen() {
     },
   });
 
-  // 2. CREATE GROUP MUTATION
+  // 2️⃣ Create group mutation
   const mutation = useMutation({
-    mutationFn: (formData) => createGroupApi(formData),
+    mutationFn: (payload) => createGroup(payload),
     onSuccess: () => {
-      // Refresh the group list immediately
-      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      queryClient.invalidateQueries(["groups"]);
       setModalVisible(false);
       Alert.alert("Success", "Group created successfully! 🎉");
     },
     onError: (error) => {
-      Alert.alert("Error", error.response?.data?.message || "Failed to create group");
-    }
+      Alert.alert("Error", error?.response?.data?.message || "Failed to create group");
+    },
   });
 
-  // 3. HANDLE FORM DATA SUBMISSION
-  const handleConfirm = async ({ name, image, privacy }) => {
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("privacy", privacy);
-    
-    // Process image for Multer backend
-    if (image) {
-      const uriParts = image.split('.');
-      const fileType = uriParts[uriParts.length - 1];
-      
-      formData.append("avatar", {
-        uri: image,
-        name: `avatar.${fileType}`,
-        type: `image/${fileType}`,
-      });
-    }
+  // 3️⃣ Open group chat
+  const handleOpenGroup = async (group) => {
+    if (!group.chatRoomId) return;
 
-    mutation.mutate(formData);
+    try {
+      const aesKeyRes = await getGroupAESKey(group.chatRoomId);
+      const aesKey = aesKeyRes?.data?.aesKey || "";
+
+      if (!aesKey) {
+        Alert.alert("Error", "Failed to fetch encryption key for this group.");
+        return;
+      }
+
+      router.push({
+        pathname: "/(tabs)/groupChatScreen",
+        params: {
+          chatRoomId: group.chatRoomId,
+          name: group.name,
+          avatar: group.avatar || "",
+          aesKey,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to open group chat:", err);
+      Alert.alert("Error", "Could not open chat. Please try again.");
+    }
+  };
+
+  // 4️⃣ Handle create group form
+  const handleConfirm = ({ name, image, privacy }) => {
+    if (!name || !privacy) return;
+
+    // Build FormData if image exists, else plain JSON
+    const payload = image
+      ? (() => {
+          const formData = new FormData();
+          formData.append("name", name.toString());
+          formData.append("privacy", privacy.toString());
+
+          const uriParts = image.split(".");
+          const fileType = uriParts[uriParts.length - 1];
+
+          formData.append("avatar", {
+            uri: image,
+            name: `avatar.${fileType}`,
+            type: `image/${fileType}`,
+          });
+
+          return formData;
+        })()
+      : { name: name.toString(), privacy: privacy.toString(), avatar: null };
+
+    mutation.mutate(payload);
   };
 
   return (
@@ -92,19 +122,8 @@ export default function GroupListScreen() {
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <GroupCard 
-              group={item} 
-              onPress={(chatId) => console.log("Navigate to chat:", chatId)} 
-            />
-          )}
-          refreshControl={
-            <RefreshControl 
-              refreshing={isRefetching} 
-              onRefresh={refetch} 
-              tintColor={colors.accent} 
-            />
-          }
+          renderItem={({ item }) => <GroupCard group={item} onPress={() => handleOpenGroup(item)} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
           ListEmptyComponent={
             <View style={styles.centered}>
               <Text style={{ color: colors.textSecondary }}>No groups found.</Text>
@@ -115,18 +134,14 @@ export default function GroupListScreen() {
       )}
 
       {/* FAB */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.accent }]}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-      >
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.accent }]} onPress={() => setModalVisible(true)}>
         <Plus color="#FFF" size={30} />
       </TouchableOpacity>
 
-      {/* MODAL */}
-      <CreateGroupModal 
-        visible={modalVisible} 
-        onClose={() => setModalVisible(false)} 
+      {/* Create group modal */}
+      <CreateGroupModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
         onConfirm={handleConfirm}
         isSubmitting={mutation.isPending}
       />
