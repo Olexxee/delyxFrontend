@@ -42,31 +42,57 @@ export async function getMyGroups() {
   }
 }
 
-export async function createGroup(name: string, image: string, privacy: string) {
+export async function createGroup(payload: FormData | { name: string; privacy: string; avatar: string | null }) {
   try {
-    const response = await api.post("/groups/create", { name, image, privacy });
+    const isFormData = payload instanceof FormData;
+
+    const response = await api.post("/groups/create", payload, {
+      headers: isFormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" },
+    });
+
     return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to create group");
+    throw new Error(error.response?.data?.message || error.message || "Failed to create group");
   }
 }
+
 
 // CHAT related APIs can be added here similarly
 export async function getChatMessages(chatRoomId: string) {
   try {
-    const response = await api.get(`/chat/messages/${chatRoomId}`);
+    const response = await api.get(
+      `/chats/room/${chatRoomId}/messages`
+    );
     return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch chat messages");
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to fetch chat messages"
+    );
   }
 }
 
+
 export async function getGroupAESKey(chatRoomId: string) {
   try {
-    const response = await api.get(`/chat/room/${chatRoomId}/key`);
+    const response = await api.get(`/chats/room/${chatRoomId}/key`);
     return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch AES key");
+    console.error("AES key request failed", {
+      url: `/api/v1/chats/room/${chatRoomId}/key`,
+      status: error?.response?.status,
+      data: error?.response?.data,
+    });
+
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      "Failed to fetch AES key"
+    );
   }
 }
+
 

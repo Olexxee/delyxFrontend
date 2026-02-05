@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { SocketProvider } from "@/api/socketRegistry";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { useEffect } from "react";
 
 import { UserProvider } from "@/authContext/UserContext";
 
@@ -38,7 +39,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <SocketProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </SocketProvider>
       </UserProvider>
     </QueryClientProvider>
   );

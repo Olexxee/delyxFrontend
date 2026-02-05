@@ -13,7 +13,9 @@ export default function ProfileScreen() {
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: colors.textSecondary }}>Profile coming soon</Text>
+      <Text style={{ color: colors.textSecondary }}>
+        Profile coming soon
+      </Text>
     </View>
   );
 }

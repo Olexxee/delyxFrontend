@@ -1,8 +1,8 @@
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
-const API_BASE_URL = "https://destructive-island.outray.app/api/v1";
+export const API_BASE_URL = "https://passive-plant.outray.app/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,12 +21,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const message =
-      error.response?.data?.message ||
-      error.message ||
-      "Request failed";
+      error.response?.data?.message || error.message || "Request failed";
     console.error("API Error:", message);
     return Promise.reject(new Error(message));
-  }
+  },
 );
 
 export default api;

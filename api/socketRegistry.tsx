@@ -1,87 +1,82 @@
+import { STORAGE_KEYS } from "@/constants/storageKeys";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
-  ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEYS } from "@/constants/storageKeys";
 
-/**
- * Context shape
- */
+
 interface SocketContextValue {
   socket: Socket | null;
+  isConnected: boolean;
+  refreshSocket: () => Promise<void>;
 }
 
-/**
- * Create context ONCE
- */
-const SocketContext = createContext<SocketContextValue>({
-  socket: null,
-});
+const SocketContext = createContext<SocketContextValue | null>(null);
 
-/**
- * Provider props
- */
-interface SocketProviderProps {
-  children: ReactNode;
-}
-
-/**
- * Socket Provider
- */
-export const SocketProvider = ({ children }: SocketProviderProps) => {
+export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
+  const socketRef = useRef<Socket | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(() => {
-    let activeSocket: Socket | null = null;
+  const initSocket = useCallback(async () => {
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    console.log("Retrieved token for socket:", token);
+    if (!token) return;
 
-    const initSocket = async () => {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    socketRef.current?.disconnect();
 
-      if (!token) {
-        console.warn("Socket not initialized: no auth token found");
-        return;
-      }
+    const newSocket = io("https://passive-plant.outray.app", {
+      auth: { token },
+      transports: ["polling", "websocket"],
+      autoConnect: true,
+    });
 
-      activeSocket = io("https://destructive-island.outray.app", {
-        auth: { token },
-        transports: ["websocket"],
-        autoConnect: true,
-      });
+    newSocket.on("connect", () => {
+      console.log("✅ Socket connected", newSocket.id);
+      setIsConnected(true);
+    });
 
-      activeSocket.on("connect", () => {
-        console.log("Socket connected:", activeSocket?.id);
-      });
+    newSocket.on("disconnect", () => {
+      console.log("❌ Socket disconnected");
+      setIsConnected(false);
+    });
 
-      activeSocket.on("connect_error", (err) => {
-        console.error("Socket connection error:", err.message);
-      });
-
-      setSocket(activeSocket);
-    };
-
-    initSocket();
-
-    return () => {
-      activeSocket?.disconnect();
-    };
+    socketRef.current = newSocket;
+    setSocket(newSocket);
   }, []);
 
+  useEffect(() => {
+    initSocket();
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+    };
+  }, [initSocket]);
+
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        isConnected,
+        refreshSocket: initSocket,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );
 };
 
-/**
- * Consumer hook
- */
-export const useSocket = (): Socket | null => {
-  const { socket } = useContext(SocketContext);
-  return socket;
+export const useSocket = () => {
+  const ctx = useContext(SocketContext);
+  if (!ctx) {
+    throw new Error("useSocket must be used within SocketProvider");
+  }
+  return ctx;
 };

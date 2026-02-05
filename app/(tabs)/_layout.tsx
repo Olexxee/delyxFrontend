@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useContext } from "react";
 import { Animated } from "react-native";
 import { Tabs, Redirect } from "expo-router";
-import { Home, Trophy, User, Users } from "lucide-react-native";
+import { Home, MessageCircle, Trophy, User, Users } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UserContext } from "@/authContext/UserContext";
@@ -97,7 +97,7 @@ export default function TabsLayout() {
             case "profile":
               return (
                 <AnimatedIcon
-                  Icon={User}
+                  Icon={MessageCircle}
                   focused={focused}
                   activeColor={colors.accent}
                   inactiveColor={colors.textSecondary}
