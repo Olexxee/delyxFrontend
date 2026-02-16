@@ -1,24 +1,30 @@
-import React, { useState } from "react";
-import {
-  Modal,
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { useTheme } from "@/theme/ThemeProvider";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, Triangle, X } from "lucide-react-native";
-import { useTheme } from "@/theme/ThemeProvider";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const PRIVACY_OPTIONS = ["public", "private", "protected"];
+
+// Define the payload type to match apiService exactly
+type CreateGroupPayload =
+  | FormData
+  | { name: string; privacy: string; avatar: string | null };
 
 interface CreateGroupModalProps {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (payload: FormData | { name: string; privacy: string }) => void;
+  onConfirm: (payload: CreateGroupPayload) => void;
   isSubmitting: boolean;
 }
 
@@ -38,10 +44,12 @@ export default function CreateGroupModal({
   // --------------------
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return alert("Permission needed to access gallery");
+    if (status !== "granted") {
+      return Alert.alert("Permission Denied", "Permission needed to access gallery");
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.8,
       allowsEditing: true,
     });
@@ -55,9 +63,9 @@ export default function CreateGroupModal({
   // Handle Create
   // --------------------
   const handleCreate = () => {
-    if (!name.trim()) return alert("Enter a group name");
+    if (!name.trim()) return Alert.alert("Required", "Enter a group name");
 
-    let payload;
+    let payload: CreateGroupPayload;
 
     if (image) {
       const formData = new FormData();
@@ -67,6 +75,7 @@ export default function CreateGroupModal({
       const filename = image.split("/").pop()?.split("?")[0] || "avatar.jpg";
       const fileType = filename.split(".").pop() || "jpg";
 
+      // Append image data
       formData.append("avatar", {
         uri: image,
         name: filename,
@@ -75,8 +84,12 @@ export default function CreateGroupModal({
 
       payload = formData;
     } else {
-      // JSON payload if no avatar
-      payload = { name: name.trim(), privacy };
+      // Matches the signature: { name, privacy, avatar: null }
+      payload = {
+        name: name.trim(),
+        privacy,
+        avatar: null
+      };
     }
 
     onConfirm(payload);
@@ -91,7 +104,10 @@ export default function CreateGroupModal({
           </Text>
 
           <TouchableOpacity
-            style={[styles.avatarCircle, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+            style={[
+              styles.avatarCircle,
+              { backgroundColor: colors.surfaceLight, borderColor: colors.border }
+            ]}
             onPress={pickImage}
           >
             {image ? (
@@ -102,7 +118,10 @@ export default function CreateGroupModal({
           </TouchableOpacity>
 
           <TextInput
-            style={[styles.input, { borderBottomColor: colors.accent, color: colors.textPrimary }]}
+            style={[
+              styles.input,
+              { borderBottomColor: colors.accent, color: colors.textPrimary }
+            ]}
             placeholder="Group name..."
             placeholderTextColor={colors.textSecondary}
             value={name}
@@ -129,7 +148,7 @@ export default function CreateGroupModal({
           <View style={styles.buttonRow}>
             <TouchableOpacity
               onPress={onClose}
-              style={[styles.shapeButton, { borderColor: colors.error }]}
+              style={[styles.shapeButton, { borderColor: colors.gold }]}
               disabled={isSubmitting}
             >
               <X size={28} color={colors.error} />

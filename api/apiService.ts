@@ -1,98 +1,45 @@
-import type { AuthResponse, LoginPayload, RegisterPayload, User } from "@/types/auth";
+import type { AuthResponse, LoginPayload, RegisterPayload } from "@/types/auth";
 import api from "./api";
 
 /* ================= AUTH ================= */
 
-export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
-  try {
-    const response = await api.post<AuthResponse>("/auth/signin", payload);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || error.message || "Login failed");
-  }
-}
+export const loginUser = (payload: LoginPayload) =>
+  api.post<AuthResponse>("/auth/signin", payload).then((res) => res.data);
 
-export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
-  try {
-    const response = await api.post<AuthResponse>("/auth/signup", payload);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || error.message || "Registration failed");
-  }
-}
+export const registerUser = (payload: RegisterPayload) =>
+  api.post<AuthResponse>("/auth/signup", payload).then((res) => res.data);
 
-/* ================= OTHER ================= */
+/* ================= FEED ================= */
 
-export async function getFeed() {
-  try {
-    const response = await api.get("/feed");
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch feed");
-  }
-}
+export const getFeed = () => api.get("/feed").then((res) => res.data);
 
-// Group related APIs can be added here similarly
-export async function getMyGroups() {
-  try {
-    const response = await api.get("/groups/my-groups");
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch groups");
-  }
-}
+/* ================= GROUPS ================= */
 
-export async function createGroup(payload: FormData | { name: string; privacy: string; avatar: string | null }) {
-  try {
-    const isFormData = payload instanceof FormData;
+export const getMyGroups = () =>
+  api.get("/groups/my-groups").then((res) => res.data);
 
-    const response = await api.post("/groups/create", payload, {
-      headers: isFormData
-        ? { "Content-Type": "multipart/form-data" }
-        : { "Content-Type": "application/json" },
-    });
+export const createGroup = (
+  payload: FormData | { name: string; privacy: string; avatar: string | null },
+) => {
+  const isFormData = payload instanceof FormData;
+  return api
+    .post("/groups/create", payload, {
+      headers: {
+        "Content-Type": isFormData ? "multipart/form-data" : "application/json",
+      },
+    })
+    .then((res) => res.data);
+};
 
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || error.message || "Failed to create group");
-  }
-}
+/* ================= CHAT ================= */
 
+export const getChatMessages = (chatRoomId: string) =>
+  api.get(`/chats/room/${chatRoomId}/messages`).then((res) => res.data);
 
-// CHAT related APIs can be added here similarly
-export async function getChatMessages(chatRoomId: string) {
-  try {
-    const response = await api.get(
-      `/chats/room/${chatRoomId}/messages`
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to fetch chat messages"
-    );
-  }
-}
+export const sendChatMessage = (chatRoomId: string, content: string) =>
+  api
+    .post(`/chats/room/${chatRoomId}/messages`, { content })
+    .then((res) => res.data);
 
-
-export async function getGroupAESKey(chatRoomId: string) {
-  try {
-    const response = await api.get(`/chats/room/${chatRoomId}/key`);
-    return response.data;
-  } catch (error: any) {
-    console.error("AES key request failed", {
-      url: `/api/v1/chats/room/${chatRoomId}/key`,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
-
-    throw new Error(
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      "Failed to fetch AES key"
-    );
-  }
-}
-
-
+export const getGroupAESKey = (chatRoomId: string) =>
+  api.get(`/chats/room/${chatRoomId}/key`).then((res) => res.data);

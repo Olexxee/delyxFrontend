@@ -9,10 +9,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { UserContext } from "@/authContext/UserContext";
-import { useChatEngine } from "@/hooks/useChatEngine";
 import ChatHeader from "@/components/group/ChatHeader";
 import ChatInput from "@/components/group/ChatInput";
 import MessageList from "@/components/group/MessageList";
+import { useChatEngine } from "@/hooks/useChatEngine";
 import { useTheme } from "@/theme/ThemeProvider";
 
 /* ---------------------------------- */
@@ -43,11 +43,21 @@ export default function ChatContainer({
 
   const userId = user._id;
 
-  // 🔹 Engine now returns ONLY what UI needs
-  const { messages, setMessages, loading } = useChatEngine(
+  const { messages, setMessages: setMessagesInternal, loading } = useChatEngine(
     chatRoomId,
     userId,
   );
+
+  // Adapter to satisfy components expecting non-null array state setter
+  const setMessages: React.Dispatch<React.SetStateAction<any[]>> = (updater) => {
+    setMessagesInternal((prev) => {
+      const safePrev: any[] = prev ?? [];
+      if (typeof updater === "function") {
+        return (updater as (prevState: any[]) => any[])(safePrev);
+      }
+      return updater;
+    });
+  };
 
   return (
     <SafeAreaView

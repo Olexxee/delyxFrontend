@@ -8,6 +8,9 @@ export const Colors = {
   danger: "#EF4444", // loss / dispute
   warning: "#F59E0B",
 
+  // Error states
+  error: "#EF4444",
+
   textPrimary: "#FFFFFF",
   textSecondary: "#9CA3AF",
 

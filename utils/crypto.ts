@@ -21,3 +21,11 @@ export const decryptMessage = (payload: EncryptedMessagePayload): string => {
 
   return "";
 };
+
+export const encryptMessage = (content: string): EncryptedMessagePayload => {
+  // Placeholder encryption logic
+  // In a real app, this would call a native module or use a library to encrypt the content
+  return {
+    encryptedContent: `encrypted(${content})`,
+  };
+};

@@ -1,10 +1,11 @@
-import { getChatMessages, getGroupAESKey } from "@/api/apiService";
+import { useEffect, useCallback, useMemo } from "react";
 import { useSocket } from "@/api/socketRegistry";
+import { getChatMessages, getGroupAESKey } from "@/api/apiService";
 import { decryptMessage, EncryptedMessagePayload } from "@/utils/crypto";
-import { useCallback, useEffect, useState } from "react";
+import { useAsyncState } from "@/utils/useAsyncState";
 
 /* ---------------------------------- */
-/* Backend and UI message types        */
+/* Types                              */
 /* ---------------------------------- */
 
 export interface BackendMessage {
@@ -12,8 +13,6 @@ export interface BackendMessage {
   chatRoomId: string;
   sender?: { _id: string; username?: string };
   encryptedContent?: string;
-  iv?: string;
-  authTag?: string;
   content?: string;
   media?: any[];
   createdAt?: string;
@@ -23,117 +22,109 @@ export interface ChatMessage {
   _id: string;
   chatRoomId: string;
   content: string;
-  sender: {
-    _id: string;
-    username: string;
-  };
+  sender: { _id: string; username: string };
   media?: any[];
   createdAt: string;
   isMe: boolean;
 }
 
 /* ---------------------------------- */
-/* Hook                                */
+/* Hook                               */
 /* ---------------------------------- */
 
 export function useChatEngine(chatRoomId: string, userId: string) {
   const { socket, isConnected } = useSocket();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const {
+    data: messages,
+    setData: setMessages,
+    loading,
+    run,
+  } = useAsyncState<ChatMessage[]>();
 
-  /* -----------------------------
-     1️⃣ Initialize chat (key + history)
-  ----------------------------- */
+  /* =========================================================
+     1️⃣ Hydration (Key + History)
+  ========================================================== */
+
   useEffect(() => {
-    let cancelled = false;
+    if (!chatRoomId) return;
 
-    const initChat = async () => {
-      try {
-        setLoading(true);
+    const hydrate = async (): Promise<ChatMessage[]> => {
+      const [keyRes, msgRes] = await Promise.all([
+        getGroupAESKey(chatRoomId),
+        getChatMessages(chatRoomId),
+      ]);
 
-        const [keyRes, msgRes] = await Promise.all([
-          getGroupAESKey(chatRoomId),
-          getChatMessages(chatRoomId),
-        ]);
+      const key = keyRes?.aesKey ?? null;
 
-        if (cancelled) return;
+      const hydrated: ChatMessage[] = Array.isArray(msgRes?.data)
+        ? msgRes.data.map((msg: BackendMessage) => {
+            const payload: EncryptedMessagePayload = {
+              encryptedContent: msg.encryptedContent,
+              content: msg.content,
+            };
 
-        const key = keyRes?.data?.aesKey ?? null;
+            const content = key
+              ? decryptMessage(payload)
+              : msg.content || "";
 
-        if (msgRes?.success && Array.isArray(msgRes.data)) {
-          const hydrated: ChatMessage[] = msgRes.data.map(
-            (msg: BackendMessage) => {
-              const payload: EncryptedMessagePayload = {
-                encryptedContent: msg.encryptedContent,
-                content: msg.content,
-              };
+            return {
+              _id: msg._id,
+              chatRoomId: msg.chatRoomId,
+              content,
+              sender: {
+                _id: msg.sender?._id || "unknown",
+                username: msg.sender?.username || "Unknown",
+              },
+              media: msg.media || [],
+              createdAt: msg.createdAt || new Date().toISOString(),
+              isMe: msg.sender?._id === userId,
+            };
+          })
+        : [];
 
-              const content = key ? decryptMessage(payload) : msg.content || "";
+      hydrated.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime()
+      );
 
-              return {
-                _id: msg._id,
-                chatRoomId: msg.chatRoomId,
-                content,
-                sender: {
-                  _id: msg.sender?._id || "unknown",
-                  username: msg.sender?.username || "Unknown",
-                },
-                media: msg.media || [],
-                createdAt: msg.createdAt || new Date().toISOString(),
-                isMe: msg.sender?._id === userId,
-              };
-            },
-          );
-
-          setMessages(hydrated);
-        } else {
-          setMessages([]);
-        }
-      } catch (err) {
-        if (!cancelled) console.error("Chat initialization failed:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      return hydrated;
     };
 
-    if (chatRoomId) initChat();
+    run(hydrate());
+  }, [chatRoomId, userId, run]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [chatRoomId, userId]);
+  /* =========================================================
+     2️⃣ Room Join / Leave Lifecycle
+  ========================================================== */
 
-  /* -----------------------------
-     2️⃣ Socket room lifecycle
-  ----------------------------- */
   useEffect(() => {
     if (!socket || !chatRoomId) return;
 
-    const joinRoom = () => socket.emit("chat:join", { chatRoomId });
-    const leaveRoom = () => socket.emit("chat:leave", { chatRoomId });
+    const join = () => socket.emit("chat:join", { chatRoomId });
+    const leave = () => socket.emit("chat:leave", { chatRoomId });
 
-    if (isConnected) joinRoom();
+    if (isConnected) join();
 
-    socket.on("connect", joinRoom);
-    socket.on("reconnect", joinRoom);
-    socket.on("disconnect", leaveRoom);
+    socket.on("connect", join);
+    socket.on("reconnect", join);
+    socket.on("disconnect", leave);
 
     return () => {
-      socket.off("connect", joinRoom);
-      socket.off("reconnect", joinRoom);
-      socket.off("disconnect", leaveRoom);
-      leaveRoom();
+      socket.off("connect", join);
+      socket.off("reconnect", join);
+      socket.off("disconnect", leave);
+      leave();
     };
   }, [socket, chatRoomId, isConnected]);
 
-  /* -----------------------------
-     3️⃣ Listen for incoming messages
-  ----------------------------- */
-  useEffect(() => {
-    if (!socket) return;
+  /* =========================================================
+     3️⃣ Incoming Message Handler (Stable)
+  ========================================================== */
 
-    const handleIncoming = (msg: BackendMessage) => {
+  const handleIncomingMessage = useCallback(
+    (msg: BackendMessage) => {
       if (msg.chatRoomId !== chatRoomId) return;
 
       const payload: EncryptedMessagePayload = {
@@ -158,18 +149,42 @@ export function useChatEngine(chatRoomId: string, userId: string) {
         isMe: msg.sender?._id === userId,
       };
 
-      setMessages((prev) => [newMsg, ...prev]);
-    };
+      setMessages((prev) => {
+        const safePrev = prev ?? [];
+        if (safePrev.some((m) => m._id === newMsg._id)) return prev;
 
-    socket.on("chat:new_message", handleIncoming);
+        const merged = [...safePrev, newMsg];
+
+        merged.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() -
+            new Date(b.createdAt).getTime()
+        );
+
+        return merged;
+      });
+    },
+    [chatRoomId, userId, setMessages]
+  );
+
+  /* =========================================================
+     4️⃣ Subscribe to Incoming Messages
+  ========================================================== */
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("chat:new_message", handleIncomingMessage);
+
     return () => {
-      socket.off("chat:new_message", handleIncoming);
+      socket.off("chat:new_message", handleIncomingMessage);
     };
-  }, [socket, chatRoomId, userId]);
+  }, [socket, handleIncomingMessage]);
 
-  /* -----------------------------
-     4️⃣ Send message (plaintext only)
-  ----------------------------- */
+  /* =========================================================
+     5️⃣ Send Message
+  ========================================================== */
+
   const sendMessage = useCallback(
     (content: string, mediaIds: string[] = []) => {
       if (!socket || !chatRoomId) return;
@@ -178,18 +193,25 @@ export function useChatEngine(chatRoomId: string, userId: string) {
         "chat:send",
         { chatRoomId, content, mediaIds },
         (ack: any) => {
-          if (!ack?.success) console.error("Message send failed:", ack?.error);
-        },
+          if (!ack?.success) {
+            console.error("Message send failed:", ack?.error);
+          }
+        }
       );
     },
-    [socket, chatRoomId],
+    [socket, chatRoomId]
   );
 
-  return {
-    messages,
-    setMessages,
-    loading,
-    isConnected,
-    sendMessage,
-  };
+  /* ========================================================= */
+
+  return useMemo(
+    () => ({
+      messages: messages ?? [],
+      setMessages,
+      loading,
+      sendMessage,
+      isConnected,
+    }),
+    [messages, setMessages, loading, sendMessage, isConnected]
+  );
 }
