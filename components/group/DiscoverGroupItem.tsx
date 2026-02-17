@@ -2,19 +2,18 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Avatar } from "@/components/ui/Avatar";
 import { useTheme } from "@/theme/ThemeProvider";
+import type { Group } from "@/types/group";
 
 type Props = {
-    group: any;
-    onPressInfo: (group: any) => void;
+    group: Group;
+    onPressInfo: (group: Group) => void;
 };
 
 export const DiscoverGroupItem: React.FC<Props> = ({ group, onPressInfo }) => {
     const { colors } = useTheme();
 
-    // Extract URL safely
-    const avatarUrl = typeof group.avatar === "string"
-        ? group.avatar
-        : group.avatar?.url ?? "";
+    // Ensure avatar is a string URL
+    const avatarUrl = group.avatar ?? "";
 
     return (
         <TouchableOpacity
@@ -26,14 +25,18 @@ export const DiscoverGroupItem: React.FC<Props> = ({ group, onPressInfo }) => {
             onPress={() => onPressInfo(group)}
         >
             <Avatar uri={avatarUrl} size={56} />
+
             <View style={styles.content}>
                 <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
                     {group.name}
                 </Text>
                 <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {group.description || "No description"}
+                    {group.memberCount !== undefined
+                        ? `${group.memberCount} members`
+                        : "No description"}
                 </Text>
             </View>
+
             <View style={styles.buttonWrapper}>
                 <Text style={[styles.joinText, { color: colors.primary }]}>Join</Text>
             </View>

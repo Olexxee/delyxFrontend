@@ -11,15 +11,29 @@ import { useDiscoverGroups } from "@/hooks/useDiscoverGroups";
 import { useMyGroups } from "@/hooks/useMyGroups";
 import { useTheme } from "@/theme/ThemeProvider";
 
+import type { GroupPrivacy } from "@/types/group";
 import { DiscoverGroupItem } from "./DiscoverGroupItem";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
 import { GroupListItem } from "./GroupListItem";
 import { GroupsHeader } from "./GroupsHeader";
 
-const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
-const [isGroupInfoVisible, setIsGroupInfoVisible] = useState(false);
-const [isJoining, setIsJoining] = useState(false);
+type GroupType = {
+    id: string;
+    _id?: string;
+    name: string;
+    avatar?: string | null;
+    chatRoomId?: string;
+    lastMessage?: any;
+    lastMessageAt?: string | null;
+    privacy: GroupPrivacy;
+};
 
+type SectionType = {
+    title: string;
+    data: GroupType[];
+};
+
+type CreateGroupPayload = FormData | { name: string; privacy: string; avatar: string | null };
 
 export default function GroupListScreen() {
     const { colors } = useTheme();
@@ -27,79 +41,147 @@ export default function GroupListScreen() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isModalVisible, setIsModalVisible] = useState(false);
-
     const debouncedSearch = useDebounce(searchQuery, 400);
 
     /* ================= QUERIES & MUTATIONS ================= */
-    const { data: myGroups = [], isLoading: isMyGroupsLoading, refetch: refetchMyGroups } = useMyGroups();
-    const { data: discoverPages, isLoading: isDiscoverLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch: refetchDiscover } = useDiscoverGroups(debouncedSearch);
+    const {
+        data: myGroups = [],
+        isLoading: isMyGroupsLoading,
+        refetch: refetchMyGroups,
+    } = useMyGroups();
+
+    const {
+        data: discoverPages,
+        isLoading: isDiscoverLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        refetch: refetchDiscover,
+    } = useDiscoverGroups(debouncedSearch);
+
     const { mutate: performCreateGroup, isPending: isCreating } = useCreateGroup();
 
     /* ================= HANDLERS ================= */
-    const handleGroupPress = (id: string) => router.push(`/chat/${id}`);
-    const handleCreateConfirm = (payload: FormData | { name: string; privacy: string; avatar: string | null }) => {
-        performCreateGroup(payload, {
-            onSuccess: () => {
-                setIsModalVisible(false);
-                refetchMyGroups();
-                Alert.alert("Success", "Group created successfully!");
-            },
-            onError: (error: any) => Alert.alert("Error", error?.message || "Failed to create group"),
-        });
-    };
-    const handleEndReached = () => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); };
+    const handleGroupPress = useCallback(
+        (group: GroupType) => {
+            if (!group.chatRoomId || !group.name) {
+                Alert.alert("Invalid group", "This group cannot be opened at the moment.");
+                return;
+            }
+
+            router.push({
+                pathname: "/(chats)/[chatRoomId]",
+                params: {
+                    chatRoomId: group.chatRoomId,
+                    name: group.name,
+                    avatar: group.avatar ?? "",
+                },
+            });
+        },
+        [router]
+    );
+
+    const handleCreateConfirm = useCallback(
+        (payload: CreateGroupPayload) => {
+            if (!payload) return;
+
+            performCreateGroup(payload, {
+                onSuccess: () => {
+                    setIsModalVisible(false);
+                    refetchMyGroups();
+                    Alert.alert("Success", "Group created successfully!");
+                },
+                onError: (error: any) =>
+                    Alert.alert("Error", error?.message || "Failed to create group"),
+            });
+        },
+        [performCreateGroup, refetchMyGroups]
+    );
+
+    const handleEndReached = useCallback(() => {
+        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     /* ================= DATA PROCESSING ================= */
-    const discoverGroups = useMemo(() => {
-        if (!discoverPages?.pages) return [];
-        return discoverPages.pages.flatMap((page) => page.groups);
+    const discoverGroups: GroupType[] = useMemo(() => {
+        if (!discoverPages?.groups) return [];
+
+        return discoverPages.groups.map((g: GroupType) => ({
+            ...g,
+            avatar: g.avatar ?? null,
+        }));
     }, [discoverPages]);
 
-    const sections = useMemo(() => [
-        { title: "MY GROUPS", data: Array.isArray(myGroups) ? myGroups : [] },
-        { title: "DISCOVER", data: Array.isArray(discoverGroups) ? discoverGroups : [] },
-    ], [myGroups, discoverGroups]);
+
+    const sections: SectionType[] = useMemo(
+        () => [
+            { title: "MY GROUPS", data: myGroups ?? [] },
+            { title: "DISCOVER", data: discoverGroups ?? [] },
+        ],
+        [myGroups, discoverGroups]
+    );
+
+    console.log("discoverPages:", discoverPages);
+    console.log("flattened discoverGroups:", discoverGroups);
 
     /* ================= RENDER HELPERS ================= */
-    const renderItem = useCallback(({ item, section }: any) => {
-        if (section.title === "MY GROUPS") {
-            return <GroupListItem group={item} onPress={handleGroupPress} />;
-        }
-        return (
-            <DiscoverGroupItem
-                group={item}
-                onPressInfo={() => {
-                    setSelectedGroup(item);
-                    setIsGroupInfoVisible(true);
-                }}
-            />
-        );
-    }, []);
+    const renderItem = useCallback(
+        ({ item, section }: { item: GroupType; section: SectionType }) => {
+            if (!item || !section) return null;
 
+            if (section.title === "MY GROUPS") {
+                return <GroupListItem group={item} onPress={() => handleGroupPress(item)} />;
+            }
 
-    const renderSectionHeader = useCallback(({ section }: any) => (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.surface }}>
-            <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>{section.title}</Text>
-        </View>
-    ), [colors]);
+            return (
+                <DiscoverGroupItem
+                    group={item}
+                    onPressInfo={() => undefined}
+                />
+            );
+        },
+        [handleGroupPress]
+    );
+
+    const renderSectionHeader = useCallback(
+        ({ section }: { section: SectionType }) => {
+            if (!section) return null;
+
+            return (
+                <View
+                    style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        backgroundColor: colors.surface,
+                    }}
+                >
+                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>{section.title}</Text>
+                </View>
+            );
+        },
+        [colors]
+    );
 
     /* ================= RENDER ================= */
     if (isMyGroupsLoading || isDiscoverLoading) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
                 <GroupsHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-                {Array.from({ length: 6 }).map((_, i) => <GroupCardSkeleton key={i} />)}
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <GroupCardSkeleton key={i} />
+                ))}
             </SafeAreaView>
         );
     }
 
     return (
+
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
             <GroupsHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
             <SectionList
                 sections={sections}
-                keyExtractor={(item, index) => (item._id ?? item.id ?? String(index))}
+                keyExtractor={(item, index) => item._id ?? item.id ?? String(index)}
                 renderItem={renderItem}
                 renderSectionHeader={renderSectionHeader}
                 onEndReached={handleEndReached}
@@ -107,7 +189,10 @@ export default function GroupListScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={false}
-                        onRefresh={() => { refetchMyGroups(); refetchDiscover(); }}
+                        onRefresh={() => {
+                            refetchMyGroups();
+                            refetchDiscover();
+                        }}
                         tintColor={colors.accent}
                     />
                 }

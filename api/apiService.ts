@@ -16,7 +16,8 @@ export const getFeed = () => api.get("/feed").then((res) => res.data);
 /* ================= GROUPS ================= */
 
 export const getMyGroups = () =>
-  api.get("/groups/my-groups").then((res) => res.data);
+  api.get("/groups/my-groups").then((res) => res.data.data);
+
 
 export const createGroup = (
   payload: FormData | { name: string; privacy: string; avatar: string | null },
