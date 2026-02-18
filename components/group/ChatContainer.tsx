@@ -1,11 +1,5 @@
 import React, { useContext } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { UserContext } from "@/authContext/UserContext";
@@ -15,10 +9,6 @@ import MessageList from "@/components/group/MessageList";
 import { useChatEngine } from "@/hooks/useChatEngine";
 import { useTheme } from "@/theme/ThemeProvider";
 
-/* ---------------------------------- */
-/* Props                               */
-/* ---------------------------------- */
-
 type ChatContainerProps = {
   chatRoomId: string;
   name: string;
@@ -26,96 +16,43 @@ type ChatContainerProps = {
   onBack: () => void;
 };
 
-/* ---------------------------------- */
-/* Component                           */
-/* ---------------------------------- */
-
-export default function ChatContainer({
-  chatRoomId,
-  name,
-  avatarUri,
-  onBack,
-}: ChatContainerProps) {
+export default function ChatContainer({ chatRoomId, name, avatarUri, onBack }: ChatContainerProps) {
   const { user } = useContext(UserContext);
   const { colors } = useTheme();
 
-  if (!user) return <LoadingState />;
+  if (!user) return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
 
   const userId = user._id;
 
-  const { messages, setMessages: setMessagesInternal, loading } = useChatEngine(
-    chatRoomId,
-    userId,
-  );
+  const { messages, setMessages: setMessagesInternal, loading } = useChatEngine(chatRoomId, userId);
 
-  // Adapter to satisfy components expecting non-null array state setter
   const setMessages: React.Dispatch<React.SetStateAction<any[]>> = (updater) => {
     setMessagesInternal((prev) => {
       const safePrev: any[] = prev ?? [];
-      if (typeof updater === "function") {
-        return (updater as (prevState: any[]) => any[])(safePrev);
-      }
+      if (typeof updater === "function") return (updater as (prevState: any[]) => any[])(safePrev);
       return updater;
     });
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.surface }]}
-    >
-      <ChatHeader
-        name={name}
-        avatarUri={avatarUri}
-        onBack={onBack}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
+      <ChatHeader name={name} avatarUri={avatarUri} onBack={onBack} />
 
-      <View style={styles.content}>
-        {loading ? (
-          <LoadingState />
-        ) : (
-          <>
-            {/* Pure presentational list */}
-            <MessageList messages={messages} />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <MessageList messages={messages} />
 
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-            >
-              <ChatInput
-                chatRoomId={chatRoomId}
-                userId={userId}
-                setMessages={setMessages}
-              />
-            </KeyboardAvoidingView>
-          </>
-        )}
-      </View>
+        <ChatInput chatRoomId={chatRoomId} userId={userId} setMessages={setMessages} />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-/* ---------------------------------- */
-/* Loading State                       */
-/* ---------------------------------- */
-
-function LoadingState() {
-  return (
-    <View style={styles.centered}>
-      <ActivityIndicator size="large" />
-    </View>
-  );
-}
-
-/* ---------------------------------- */
-/* Styles                              */
-/* ---------------------------------- */
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1 },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  flex: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

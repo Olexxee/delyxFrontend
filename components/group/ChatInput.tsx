@@ -1,10 +1,11 @@
 import * as ImagePicker from "expo-image-picker";
 import { Paperclip, Send, X } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
   Platform,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -17,10 +18,6 @@ import {
 import { useSocket } from "@/api/socketRegistry";
 import { useTheme } from "@/theme/ThemeProvider";
 
-/* -------------------------------------------------------------------------- */
-/*                                    Types                                   */
-/* -------------------------------------------------------------------------- */
-
 interface ChatInputProps {
   chatRoomId: string;
   userId: string;
@@ -29,6 +26,7 @@ interface ChatInputProps {
 
 interface Styles {
   inputWrapper: ViewStyle;
+  previewScroll: ViewStyle;
   previewContainer: ViewStyle;
   previewImage: ImageStyle;
   removeImageBtn: ViewStyle;
@@ -38,35 +36,31 @@ interface Styles {
   sendBtn: ViewStyle;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                Component                                   */
-/* -------------------------------------------------------------------------- */
-
 export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInputProps) {
   const { colors } = useTheme();
   const { socket, isConnected } = useSocket();
 
   const [input, setInput] = useState("");
-  const [image, setImage] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ----------------------------- Image Picker ----------------------------- */
-
-  const pickImage = async () => {
+  /* ----------------------------- Image Picker ----------------------- */
+  const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsMultipleSelection: true,
       quality: 0.7,
     });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setImage(result.assets[0].uri);
+
+    if (!result.canceled) {
+      const uris = result.assets?.map((a) => a.uri) || [];
+      setImages((prev) => [...prev, ...uris]);
     }
   };
 
-  /* --------------------------- Typing Indicator -------------------------- */
-
+  /* ---------------------------- Typing Indicator ------------------- */
   const handleTextChange = (text: string) => {
     setInput(text);
 
@@ -81,58 +75,60 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
     }, 2000);
   };
 
-  /* ----------------------------- Send Message ---------------------------- */
-
+  /* --------------------------- Send Message ------------------------ */
   const handleSend = async () => {
     if (!socket || !isConnected) return;
-    if (!input.trim() && !image) return;
+    if (!input.trim() && images.length === 0) return;
 
     const messageText = input.trim();
-    const currentImage = image;
+    const mediaUris = [...images];
 
     setInput("");
-    setImage(null);
+    setImages([]);
     setIsUploading(true);
 
     try {
-      const mediaIds = currentImage ? [currentImage] : [];
-      const payload = { chatRoomId, content: messageText || "", mediaIds };
+      const payload = { chatRoomId, content: messageText || "", mediaIds: mediaUris };
 
       socket.emit("chat:send", payload, (ack: any) => {
         if (!ack?.success) console.error("Message send failed:", ack?.error);
       });
 
+      // Optimistic UI
       const optimisticMessage = {
         _id: `temp-${Date.now()}`,
         chatRoomId,
         content: messageText || "Sent an image",
         sender: { _id: userId, username: "Me" },
+        media: mediaUris,
         createdAt: new Date().toISOString(),
         isMe: true,
-        media: mediaIds,
       };
 
-      setMessages((prev) => [optimisticMessage, ...prev]);
+      setMessages((prev) => [optimisticMessage, ...(prev ?? [])]);
     } finally {
       setIsUploading(false);
     }
   };
 
-  /* ---------------------------------- JSX --------------------------------- */
-
+  /* ----------------------------- JSX -------------------------------- */
   return (
     <View style={[styles.inputWrapper, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
-      {image && (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: image }} style={styles.previewImage} />
-          <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImage(null)}>
-            <X size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
+      {images.length > 0 && (
+        <ScrollView horizontal style={styles.previewScroll}>
+          {images.map((uri, index) => (
+            <View key={uri} style={styles.previewContainer}>
+              <Image source={{ uri }} style={styles.previewImage} />
+              <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}>
+                <X size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
       )}
 
       <View style={[styles.inputBar, { backgroundColor: colors.surfaceLight }]}>
-        <TouchableOpacity style={styles.attachBtn} onPress={pickImage} disabled={isUploading}>
+        <TouchableOpacity style={styles.attachBtn} onPress={pickImages} disabled={isUploading}>
           <Paperclip size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
@@ -147,8 +143,8 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
 
         <TouchableOpacity
           onPress={handleSend}
-          disabled={(!input.trim() && !image) || isUploading}
-          style={[styles.sendBtn, { backgroundColor: input.trim() || image ? colors.accent : colors.textSecondary }]}
+          disabled={(!input.trim() && images.length === 0) || isUploading}
+          style={[styles.sendBtn, { backgroundColor: input.trim() || images.length ? colors.accent : colors.textSecondary }]}
         >
           {isUploading ? <ActivityIndicator size="small" color="#fff" /> : <Send size={18} color="#fff" />}
         </TouchableOpacity>
@@ -157,7 +153,7 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
   );
 }
 
-/* --------------------------------- Styles -------------------------------- */
+/* ------------------------------ Styles ---------------------------- */
 
 const styles = StyleSheet.create<Styles>({
   inputWrapper: {
@@ -165,14 +161,16 @@ const styles = StyleSheet.create<Styles>({
     paddingVertical: Platform.OS === "ios" ? 10 : 8,
     borderTopWidth: 1,
   },
+  previewScroll: { marginBottom: 10 },
   previewContainer: {
-    marginBottom: 10,
+    marginRight: 8,
     position: "relative",
-    width: 100,
+    width: 80,
+    height: 80,
   },
   previewImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     borderRadius: 12,
   },
   removeImageBtn: {

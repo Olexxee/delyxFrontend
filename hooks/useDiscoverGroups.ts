@@ -1,19 +1,15 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import type { DiscoverGroupsResponse } from "@/types/group";
 import { getDiscoverGroups } from "@/api/groups.api";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export const useDiscoverGroups = (search: string) => {
-  return useInfiniteQuery<
-    DiscoverGroupsResponse, // return type of queryFn
-    Error,                 // error type
-    DiscoverGroupsResponse, // data type for useInfiniteQuery
-    ["discoverGroups", string], // queryKey type
-    number                 // pageParam type
-  >({
+  return useInfiniteQuery({
     queryKey: ["discoverGroups", search],
-    queryFn: ({ pageParam = 1 }: { pageParam: number }) => getDiscoverGroups(pageParam, search),
+    queryFn: ({ pageParam }) =>
+      getDiscoverGroups((pageParam as number) ?? 1, search),
+
     initialPageParam: 1,
-    getNextPageParam: (lastPage: DiscoverGroupsResponse) =>
+
+    getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 };

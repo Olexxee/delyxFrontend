@@ -1,6 +1,8 @@
 export interface EncryptedMessagePayload {
   encryptedContent?: string;
   content?: string;
+  iv?: string;
+  authTag?: string;
 }
 
 /**

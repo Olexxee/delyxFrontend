@@ -1,8 +1,8 @@
-import { useEffect, useCallback, useMemo } from "react";
-import { useSocket } from "@/api/socketRegistry";
 import { getChatMessages, getGroupAESKey } from "@/api/apiService";
+import { useSocket } from "@/api/socketRegistry";
 import { decryptMessage, EncryptedMessagePayload } from "@/utils/crypto";
 import { useAsyncState } from "@/utils/useAsyncState";
+import { useCallback, useEffect, useMemo } from "react";
 
 /* ---------------------------------- */
 /* Types                              */
@@ -10,8 +10,8 @@ import { useAsyncState } from "@/utils/useAsyncState";
 
 export interface BackendMessage {
   _id: string;
-  chatRoomId: string;
-  sender?: { _id: string; username?: string };
+  chatRoom: string;
+  sender?: { _id: string; username?: string; profilePicture?: string };
   encryptedContent?: string;
   content?: string;
   media?: any[];
@@ -22,7 +22,7 @@ export interface ChatMessage {
   _id: string;
   chatRoomId: string;
   content: string;
-  sender: { _id: string; username: string };
+  sender: { _id: string; username: string; profilePicture?: string };
   media?: any[];
   createdAt: string;
   isMe: boolean;
@@ -43,89 +43,101 @@ export function useChatEngine(chatRoomId: string, userId: string) {
   } = useAsyncState<ChatMessage[]>();
 
   /* =========================================================
-     1️⃣ Hydration (Key + History)
+     1️⃣ Hydrate messages (fetch + decrypt)
   ========================================================== */
-
   useEffect(() => {
     if (!chatRoomId) return;
 
-    const hydrate = async (): Promise<ChatMessage[]> => {
-      const [keyRes, msgRes] = await Promise.all([
-        getGroupAESKey(chatRoomId),
-        getChatMessages(chatRoomId),
-      ]);
+    const hydrateMessages = async (): Promise<ChatMessage[]> => {
+      try {
+        // Fetch key + messages
+        const [keyRes, msgRes] = await Promise.all([
+          getGroupAESKey(chatRoomId),
+          getChatMessages(chatRoomId),
+        ]);
 
-      const key = keyRes?.aesKey ?? null;
+        // Correctly extract AES key from nested data
+        const key = keyRes?.data?.aesKey ?? null;
+        console.log("Group AES key:", key);
 
-      const hydrated: ChatMessage[] = Array.isArray(msgRes?.data)
-        ? msgRes.data.map((msg: BackendMessage) => {
-            const payload: EncryptedMessagePayload = {
-              encryptedContent: msg.encryptedContent,
-              content: msg.content,
-            };
+        console.log("Raw API messages:", msgRes);
 
-            const content = key
-              ? decryptMessage(payload)
-              : msg.content || "";
+        // Ensure messages array exists
+        const backendMessages: BackendMessage[] =
+          msgRes?.data?.messages?.data?.messages ?? [];
 
-            return {
-              _id: msg._id,
-              chatRoomId: msg.chatRoomId,
-              content,
-              sender: {
-                _id: msg.sender?._id || "unknown",
-                username: msg.sender?.username || "Unknown",
-              },
-              media: msg.media || [],
-              createdAt: msg.createdAt || new Date().toISOString(),
-              isMe: msg.sender?._id === userId,
-            };
-          })
-        : [];
+        // Map backend -> hydrated frontend messages
+        const hydrated: ChatMessage[] = backendMessages.map((msg) => {
+          const payload = {
+            encryptedContent: msg.encryptedContent,
+            content: msg.content,
+          };
 
-      hydrated.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() -
-          new Date(b.createdAt).getTime()
-      );
+          // If we have an AES key, decrypt, otherwise fallback to plaintext content
+          const content = key ? decryptMessage(payload) : msg.content || "";
 
-      return hydrated;
+          return {
+            _id: msg._id,
+            chatRoomId: msg.chatRoom,
+            content,
+            sender: {
+              _id: msg.sender?._id || "unknown",
+              username: msg.sender?.username || "Unknown",
+              profilePicture: msg.sender?.profilePicture,
+            },
+            media: msg.media || [],
+            createdAt: msg.createdAt || new Date().toISOString(),
+            isMe: msg.sender?._id === userId,
+          };
+        });
+
+        // Sort ascending by createdAt
+        hydrated.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+
+        console.log("Hydrated messages:", hydrated);
+        return hydrated;
+      } catch (err) {
+        console.error("Failed to hydrate messages:", err);
+        return [];
+      }
     };
 
-    run(hydrate());
+    run(hydrateMessages());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatRoomId, userId, run]);
 
   /* =========================================================
-     2️⃣ Room Join / Leave Lifecycle
+     2️⃣ Handle socket join/leave lifecycle
   ========================================================== */
-
   useEffect(() => {
     if (!socket || !chatRoomId) return;
 
-    const join = () => socket.emit("chat:join", { chatRoomId });
-    const leave = () => socket.emit("chat:leave", { chatRoomId });
+    const joinRoom = () => socket.emit("chat:join", { chatRoomId });
+    const leaveRoom = () => socket.emit("chat:leave", { chatRoomId });
 
-    if (isConnected) join();
+    if (isConnected) joinRoom();
 
-    socket.on("connect", join);
-    socket.on("reconnect", join);
-    socket.on("disconnect", leave);
+    socket.on("connect", joinRoom);
+    socket.on("reconnect", joinRoom);
+    socket.on("disconnect", leaveRoom);
 
     return () => {
-      socket.off("connect", join);
-      socket.off("reconnect", join);
-      socket.off("disconnect", leave);
-      leave();
+      socket.off("connect", joinRoom);
+      socket.off("reconnect", joinRoom);
+      socket.off("disconnect", leaveRoom);
+      leaveRoom();
     };
   }, [socket, chatRoomId, isConnected]);
 
   /* =========================================================
-     3️⃣ Incoming Message Handler (Stable)
+     3️⃣ Handle incoming messages
   ========================================================== */
-
   const handleIncomingMessage = useCallback(
     (msg: BackendMessage) => {
-      if (msg.chatRoomId !== chatRoomId) return;
+      if (msg.chatRoom !== chatRoomId) return;
 
       const payload: EncryptedMessagePayload = {
         encryptedContent: msg.encryptedContent,
@@ -138,11 +150,12 @@ export function useChatEngine(chatRoomId: string, userId: string) {
 
       const newMsg: ChatMessage = {
         _id: msg._id,
-        chatRoomId: msg.chatRoomId,
+        chatRoomId: msg.chatRoom,
         content,
         sender: {
           _id: msg.sender?._id || "unknown",
           username: msg.sender?.username || "Unknown",
+          profilePicture: msg.sender?.profilePicture,
         },
         media: msg.media || [],
         createdAt: msg.createdAt || new Date().toISOString(),
@@ -154,37 +167,31 @@ export function useChatEngine(chatRoomId: string, userId: string) {
         if (safePrev.some((m) => m._id === newMsg._id)) return prev;
 
         const merged = [...safePrev, newMsg];
-
         merged.sort(
           (a, b) =>
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime()
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
-
         return merged;
       });
     },
-    [chatRoomId, userId, setMessages]
+    [chatRoomId, userId, setMessages],
   );
-
-  /* =========================================================
-     4️⃣ Subscribe to Incoming Messages
-  ========================================================== */
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("chat:new_message", handleIncomingMessage);
+    const listener = (msg: BackendMessage) => handleIncomingMessage(msg);
+
+    socket.on("chat:new_message", listener);
 
     return () => {
-      socket.off("chat:new_message", handleIncomingMessage);
+      socket.off("chat:new_message", listener);
     };
   }, [socket, handleIncomingMessage]);
 
   /* =========================================================
-     5️⃣ Send Message
+     4️⃣ Send message
   ========================================================== */
-
   const sendMessage = useCallback(
     (content: string, mediaIds: string[] = []) => {
       if (!socket || !chatRoomId) return;
@@ -193,17 +200,16 @@ export function useChatEngine(chatRoomId: string, userId: string) {
         "chat:send",
         { chatRoomId, content, mediaIds },
         (ack: any) => {
-          if (!ack?.success) {
-            console.error("Message send failed:", ack?.error);
-          }
-        }
+          if (!ack?.success) console.error("Message send failed:", ack?.error);
+        },
       );
     },
-    [socket, chatRoomId]
+    [socket, chatRoomId],
   );
 
-  /* ========================================================= */
-
+  /* =========================================================
+     5️⃣ Return API
+  ========================================================== */
   return useMemo(
     () => ({
       messages: messages ?? [],
@@ -212,6 +218,6 @@ export function useChatEngine(chatRoomId: string, userId: string) {
       sendMessage,
       isConnected,
     }),
-    [messages, setMessages, loading, sendMessage, isConnected]
+    [messages, setMessages, loading, sendMessage, isConnected],
   );
 }
