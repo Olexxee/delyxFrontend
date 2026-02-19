@@ -1,5 +1,11 @@
 import React, { useContext } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { UserContext } from "@/authContext/UserContext";
@@ -16,26 +22,43 @@ type ChatContainerProps = {
   onBack: () => void;
 };
 
-export default function ChatContainer({ chatRoomId, name, avatarUri, onBack }: ChatContainerProps) {
-  const { user } = useContext(UserContext);
+export default function ChatContainer({
+  chatRoomId,
+  name,
+  avatarUri,
+  onBack,
+}: ChatContainerProps) {
+  const { user, isRestoring } = useContext(UserContext);
   const { colors } = useTheme();
 
-  if (!user) return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+  // Support both _id (MongoDB) and id (REST) shapes so this doesn't silently
+  // break if the User type changes. The log showed user._id was undefined.
+  const userId = (user as any)?._id ?? (user as any)?.id ?? "";
 
-  const userId = user._id;
+  // Hooks must always be called unconditionally — before any early returns.
+  // userId is "" while the session restores; the hook guards on it internally.
+  const { messages, loading, sendMessage, isConnected } = useChatEngine(
+    chatRoomId,
+    userId,
+  );
 
-  const { messages, setMessages: setMessagesInternal, loading } = useChatEngine(chatRoomId, userId);
-
-  const setMessages: React.Dispatch<React.SetStateAction<any[]>> = (updater) => {
-    setMessagesInternal((prev) => {
-      const safePrev: any[] = prev ?? [];
-      if (typeof updater === "function") return (updater as (prevState: any[]) => any[])(safePrev);
-      return updater;
-    });
-  };
+  // Block render until AsyncStorage finishes restoring the session.
+  // Previously we only guarded on !user, but isRestoring=true means user is
+  // still null while the async read is in flight — so useChatEngine was firing
+  // with userId="" on every mount, the guard blocked hydration, and the effect
+  // never re-ran because userId never changed from "" to a real value.
+  if (isRestoring || !user) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.surface }]}
+    >
       <ChatHeader name={name} avatarUri={avatarUri} onBack={onBack} />
 
       <KeyboardAvoidingView
@@ -43,9 +66,13 @@ export default function ChatContainer({ chatRoomId, name, avatarUri, onBack }: C
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <MessageList messages={messages} />
+        <MessageList messages={messages} loading={loading} />
 
-        <ChatInput chatRoomId={chatRoomId} userId={userId} setMessages={setMessages} />
+        <ChatInput
+          chatRoomId={chatRoomId}
+          sendMessage={sendMessage}
+          isConnected={isConnected}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

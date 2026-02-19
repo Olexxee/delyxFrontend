@@ -1,8 +1,7 @@
-import { getChatMessages, getGroupAESKey } from "@/api/apiService";
+import { getChatMessages } from "@/api/apiService";
 import { useSocket } from "@/api/socketRegistry";
-import { decryptMessage, EncryptedMessagePayload } from "@/utils/crypto";
 import { useAsyncState } from "@/utils/useAsyncState";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 /* ---------------------------------- */
 /* Types                              */
@@ -10,12 +9,11 @@ import { useCallback, useEffect, useMemo } from "react";
 
 export interface BackendMessage {
   _id: string;
-  chatRoom: string;
-  sender?: { _id: string; username?: string; profilePicture?: string };
-  encryptedContent?: string;
+  chatRoomId: string;
+  sender?: { _id: string; username?: string; profilePicture?: string } | null;
   content?: string;
-  media?: any[];
-  createdAt?: string;
+  media?: string[];
+  createdAt?: string | Date;
 }
 
 export interface ChatMessage {
@@ -23,9 +21,35 @@ export interface ChatMessage {
   chatRoomId: string;
   content: string;
   sender: { _id: string; username: string; profilePicture?: string };
-  media?: any[];
+  media: string[];
   createdAt: string;
   isMe: boolean;
+}
+
+/* ---------------------------------- */
+/* Helpers                            */
+/* ---------------------------------- */
+
+function normaliseMessage(msg: BackendMessage, userId: string): ChatMessage {
+  // Guarantee sender is always a valid object — never null/undefined.
+  // MessageBubble and other consumers can safely access sender.username.
+  const sender = {
+    _id: msg.sender?._id ?? "unknown",
+    username: msg.sender?.username ?? "Unknown",
+    profilePicture: msg.sender?.profilePicture,
+  };
+
+  return {
+    _id: msg._id ?? `temp-${Date.now()}`,
+    chatRoomId: msg.chatRoomId ?? "unknown",
+    content: msg.content ?? "",
+    sender,
+    media: msg.media ?? [],
+    createdAt: msg.createdAt
+      ? new Date(msg.createdAt).toISOString()
+      : new Date().toISOString(),
+    isMe: sender._id === userId,
+  };
 }
 
 /* ---------------------------------- */
@@ -34,84 +58,59 @@ export interface ChatMessage {
 
 export function useChatEngine(chatRoomId: string, userId: string) {
   const { socket, isConnected } = useSocket();
+  const userIdRef = useRef(userId);
 
   const {
     data: messages,
     setData: setMessages,
     loading,
-    run,
   } = useAsyncState<ChatMessage[]>();
 
-  /* =========================================================
-     1️⃣ Hydrate messages (fetch + decrypt)
-  ========================================================== */
   useEffect(() => {
-    if (!chatRoomId) return;
+    userIdRef.current = userId;
+  }, [userId]);
 
-    const hydrateMessages = async (): Promise<ChatMessage[]> => {
+  /* ---------------- Load messages ---------------- */
+  useEffect(() => {
+    if (!chatRoomId || !userId) return;
+
+    const hydrateMessages = async () => {
       try {
-        // Fetch key + messages
-        const [keyRes, msgRes] = await Promise.all([
-          getGroupAESKey(chatRoomId),
-          getChatMessages(chatRoomId),
-        ]);
+        const msgRes = await getChatMessages(chatRoomId);
 
-        // Correctly extract AES key from nested data
-        const key = keyRes?.data?.aesKey ?? null;
-        console.log("Group AES key:", key);
+        const backendMessages: BackendMessage[] = Array.isArray(
+          msgRes?.data?.messages?.data?.messages,
+        )
+          ? msgRes.data.messages.data.messages
+          : [];
 
-        console.log("Raw API messages:", msgRes);
-
-        // Ensure messages array exists
-        const backendMessages: BackendMessage[] =
-          msgRes?.data?.messages?.data?.messages ?? [];
-
-        // Map backend -> hydrated frontend messages
-        const hydrated: ChatMessage[] = backendMessages.map((msg) => {
-          const payload = {
-            encryptedContent: msg.encryptedContent,
-            content: msg.content,
-          };
-
-          // If we have an AES key, decrypt, otherwise fallback to plaintext content
-          const content = key ? decryptMessage(payload) : msg.content || "";
-
-          return {
-            _id: msg._id,
-            chatRoomId: msg.chatRoom,
-            content,
-            sender: {
-              _id: msg.sender?._id || "unknown",
-              username: msg.sender?.username || "Unknown",
-              profilePicture: msg.sender?.profilePicture,
-            },
-            media: msg.media || [],
-            createdAt: msg.createdAt || new Date().toISOString(),
-            isMe: msg.sender?._id === userId,
-          };
-        });
-
-        // Sort ascending by createdAt
-        hydrated.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        );
+        const hydrated = backendMessages
+          .map((msg) => {
+            try {
+              return normaliseMessage(msg, userId);
+            } catch (err) {
+              console.warn("Skipping invalid message", msg, err);
+              return null;
+            }
+          })
+          .filter((m): m is ChatMessage => m !== null)
+          .sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
 
         console.log("Hydrated messages:", hydrated);
-        return hydrated;
+
+        setMessages(hydrated);
       } catch (err) {
         console.error("Failed to hydrate messages:", err);
-        return [];
       }
     };
 
-    run(hydrateMessages());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatRoomId, userId, run]);
+    hydrateMessages();
+  }, [chatRoomId, userId, setMessages]);
 
-  /* =========================================================
-     2️⃣ Handle socket join/leave lifecycle
-  ========================================================== */
+  /* ---------------- Socket lifecycle ---------------- */
   useEffect(() => {
     if (!socket || !chatRoomId) return;
 
@@ -132,92 +131,66 @@ export function useChatEngine(chatRoomId: string, userId: string) {
     };
   }, [socket, chatRoomId, isConnected]);
 
-  /* =========================================================
-     3️⃣ Handle incoming messages
-  ========================================================== */
+  /* ---------------- Incoming messages ---------------- */
   const handleIncomingMessage = useCallback(
     (msg: BackendMessage) => {
-      if (msg.chatRoom !== chatRoomId) return;
+      if (msg.chatRoomId !== chatRoomId) return;
 
-      const payload: EncryptedMessagePayload = {
-        encryptedContent: msg.encryptedContent,
-        content: msg.content,
-      };
-
-      const content = msg.encryptedContent
-        ? decryptMessage(payload)
-        : msg.content || "";
-
-      const newMsg: ChatMessage = {
-        _id: msg._id,
-        chatRoomId: msg.chatRoom,
-        content,
-        sender: {
-          _id: msg.sender?._id || "unknown",
-          username: msg.sender?.username || "Unknown",
-          profilePicture: msg.sender?.profilePicture,
-        },
-        media: msg.media || [],
-        createdAt: msg.createdAt || new Date().toISOString(),
-        isMe: msg.sender?._id === userId,
-      };
+      const newMsg = normaliseMessage(msg, userIdRef.current);
 
       setMessages((prev) => {
         const safePrev = prev ?? [];
+
         if (safePrev.some((m) => m._id === newMsg._id)) return prev;
 
-        const merged = [...safePrev, newMsg];
-        merged.sort(
+        return [...safePrev, newMsg].sort(
           (a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
-        return merged;
       });
     },
-    [chatRoomId, userId, setMessages],
+    [chatRoomId, setMessages],
   );
 
   useEffect(() => {
     if (!socket) return;
-
-    const listener = (msg: BackendMessage) => handleIncomingMessage(msg);
-
-    socket.on("chat:new_message", listener);
-
+    socket.on("chat:new_message", handleIncomingMessage);
     return () => {
-      socket.off("chat:new_message", listener);
+      socket.off("chat:new_message", handleIncomingMessage);
     };
   }, [socket, handleIncomingMessage]);
 
-  /* =========================================================
-     4️⃣ Send message
-  ========================================================== */
+  /* ---------------- Send message ---------------- */
   const sendMessage = useCallback(
-    (content: string, mediaIds: string[] = []) => {
+    (content: string, media: string[] = []) => {
       if (!socket || !chatRoomId) return;
 
-      socket.emit(
-        "chat:send",
-        { chatRoomId, content, mediaIds },
-        (ack: any) => {
-          if (!ack?.success) console.error("Message send failed:", ack?.error);
-        },
-      );
+      socket.emit("chat:send", { chatRoomId, content, media }, (ack: any) => {
+        if (!ack?.success) console.error("Message send failed:", ack?.error);
+      });
+
+      const tempMsg: ChatMessage = {
+        _id: `temp-${Date.now()}`,
+        chatRoomId,
+        content,
+        sender: { _id: userIdRef.current, username: "Me" },
+        media,
+        createdAt: new Date().toISOString(),
+        isMe: true,
+      };
+
+      setMessages((prev) => [...(prev ?? []), tempMsg]);
     },
-    [socket, chatRoomId],
+    [socket, chatRoomId, setMessages],
   );
 
-  /* =========================================================
-     5️⃣ Return API
-  ========================================================== */
   return useMemo(
     () => ({
       messages: messages ?? [],
-      setMessages,
       loading,
       sendMessage,
       isConnected,
     }),
-    [messages, setMessages, loading, sendMessage, isConnected],
+    [messages, loading, sendMessage, isConnected],
   );
 }

@@ -4,15 +4,15 @@ import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageStyle,
   Platform,
   ScrollView,
   StyleSheet,
   TextInput,
+  TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
-  TextStyle,
-  ImageStyle,
 } from "react-native";
 
 import { useSocket } from "@/api/socketRegistry";
@@ -20,8 +20,9 @@ import { useTheme } from "@/theme/ThemeProvider";
 
 interface ChatInputProps {
   chatRoomId: string;
-  userId: string;
-  setMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  /** Provided by useChatEngine — handles socket emit + optimistic UI in one place. */
+  sendMessage: (content: string, mediaIds?: string[]) => void;
+  isConnected: boolean;
 }
 
 interface Styles {
@@ -36,9 +37,13 @@ interface Styles {
   sendBtn: ViewStyle;
 }
 
-export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInputProps) {
+export default function ChatInput({
+  chatRoomId,
+  sendMessage,
+  isConnected,
+}: ChatInputProps) {
   const { colors } = useTheme();
-  const { socket, isConnected } = useSocket();
+  const { socket } = useSocket();
 
   const [input, setInput] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -55,7 +60,7 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
     });
 
     if (!result.canceled) {
-      const uris = result.assets?.map((a) => a.uri) || [];
+      const uris = result.assets?.map((a) => a.uri) ?? [];
       setImages((prev) => [...prev, ...uris]);
     }
   };
@@ -77,49 +82,47 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
 
   /* --------------------------- Send Message ------------------------ */
   const handleSend = async () => {
-    if (!socket || !isConnected) return;
+    if (!isConnected) return;
     if (!input.trim() && images.length === 0) return;
 
     const messageText = input.trim();
     const mediaUris = [...images];
 
+    // Clear input immediately for snappy UX
     setInput("");
     setImages([]);
     setIsUploading(true);
 
     try {
-      const payload = { chatRoomId, content: messageText || "", mediaIds: mediaUris };
-
-      socket.emit("chat:send", payload, (ack: any) => {
-        if (!ack?.success) console.error("Message send failed:", ack?.error);
-      });
-
-      // Optimistic UI
-      const optimisticMessage = {
-        _id: `temp-${Date.now()}`,
-        chatRoomId,
-        content: messageText || "Sent an image",
-        sender: { _id: userId, username: "Me" },
-        media: mediaUris,
-        createdAt: new Date().toISOString(),
-        isMe: true,
-      };
-
-      setMessages((prev) => [optimisticMessage, ...(prev ?? [])]);
+      // ✅ Single call — useChatEngine owns the socket emit AND the optimistic
+      //    message. No duplicate bubbles, no split responsibilities.
+      sendMessage(messageText || "", mediaUris);
     } finally {
       setIsUploading(false);
     }
   };
 
   /* ----------------------------- JSX -------------------------------- */
+  const canSend = (input.trim().length > 0 || images.length > 0) && !isUploading;
+
   return (
-    <View style={[styles.inputWrapper, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+    <View
+      style={[
+        styles.inputWrapper,
+        { borderTopColor: colors.border, backgroundColor: colors.surface },
+      ]}
+    >
       {images.length > 0 && (
         <ScrollView horizontal style={styles.previewScroll}>
           {images.map((uri, index) => (
             <View key={uri} style={styles.previewContainer}>
               <Image source={{ uri }} style={styles.previewImage} />
-              <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}>
+              <TouchableOpacity
+                style={styles.removeImageBtn}
+                onPress={() =>
+                  setImages((prev) => prev.filter((_, i) => i !== index))
+                }
+              >
                 <X size={16} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -128,7 +131,11 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
       )}
 
       <View style={[styles.inputBar, { backgroundColor: colors.surfaceLight }]}>
-        <TouchableOpacity style={styles.attachBtn} onPress={pickImages} disabled={isUploading}>
+        <TouchableOpacity
+          style={styles.attachBtn}
+          onPress={pickImages}
+          disabled={isUploading}
+        >
           <Paperclip size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
@@ -143,10 +150,17 @@ export default function ChatInput({ chatRoomId, userId, setMessages }: ChatInput
 
         <TouchableOpacity
           onPress={handleSend}
-          disabled={(!input.trim() && images.length === 0) || isUploading}
-          style={[styles.sendBtn, { backgroundColor: input.trim() || images.length ? colors.accent : colors.textSecondary }]}
+          disabled={!canSend}
+          style={[
+            styles.sendBtn,
+            { backgroundColor: canSend ? colors.accent : colors.textSecondary },
+          ]}
         >
-          {isUploading ? <ActivityIndicator size="small" color="#fff" /> : <Send size={18} color="#fff" />}
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Send size={18} color="#fff" />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -189,6 +203,20 @@ const styles = StyleSheet.create<Styles>({
     paddingVertical: 4,
   },
   attachBtn: { padding: 10 },
-  textInput: { flex: 1, fontSize: 16, paddingHorizontal: 10, paddingVertical: 10, maxHeight: 120 },
-  sendBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: 4, marginRight: 4 },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    maxHeight: 120,
+  },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+    marginRight: 4,
+  },
 });

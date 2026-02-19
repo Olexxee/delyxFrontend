@@ -40,6 +40,3 @@ export const sendChatMessage = (chatRoomId: string, content: string) =>
   api
     .post(`/chats/room/${chatRoomId}/messages`, { content })
     .then((res) => res.data);
-
-export const getGroupAESKey = (chatRoomId: string) =>
-  api.get(`/chats/room/${chatRoomId}/key`).then((res) => res.data);
