@@ -1,4 +1,4 @@
-import { getChatMessages } from "@/api/apiService";
+import { getChatMessages, sendChatMessage } from "@/api/apiService";
 import { useSocket } from "@/api/socketRegistry";
 import { useAsyncState } from "@/utils/useAsyncState";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -162,26 +162,33 @@ export function useChatEngine(chatRoomId: string, userId: string) {
 
   /* ---------------- Send message ---------------- */
   const sendMessage = useCallback(
-    (content: string, media: string[] = []) => {
-      if (!socket || !chatRoomId) return;
+    async (content: string, media: string[] = []) => {
+      if (!chatRoomId) return;
 
-      socket.emit("chat:send", { chatRoomId, content, media }, (ack: any) => {
-        if (!ack?.success) console.error("Message send failed:", ack?.error);
-      });
+      try {
+        // Optimistic UI update
+        const tempMsg: ChatMessage = {
+          _id: `temp-${Date.now()}`,
+          chatRoomId,
+          content,
+          sender: { _id: userIdRef.current, username: "Me" },
+          media,
+          createdAt: new Date().toISOString(),
+          isMe: true,
+        };
 
-      const tempMsg: ChatMessage = {
-        _id: `temp-${Date.now()}`,
-        chatRoomId,
-        content,
-        sender: { _id: userIdRef.current, username: "Me" },
-        media,
-        createdAt: new Date().toISOString(),
-        isMe: true,
-      };
+        setMessages((prev) => [...(prev ?? []), tempMsg]);
 
-      setMessages((prev) => [...(prev ?? []), tempMsg]);
+        // Call REST endpoint
+        await sendChatMessage(chatRoomId, content);
+
+        // DO NOT manually emit socket event here
+        // Backend should emit "chat:new_message" after saving
+      } catch (error) {
+        console.error("Failed to send message:", error);
+      }
     },
-    [socket, chatRoomId, setMessages],
+    [chatRoomId, setMessages],
   );
 
   return useMemo(

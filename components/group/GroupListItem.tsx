@@ -6,7 +6,14 @@ import React from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
-    group: any;
+    group: {
+        name: string;
+        avatar?: string | null;
+        chatRoomId?: string;
+        lastMessage?: string | null;
+        lastMessageAt?: string | null;
+        unreadCount?: number;
+    };
     onPress: (group: any) => void;
 };
 
@@ -18,13 +25,20 @@ export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
     return (
         <TouchableOpacity
             activeOpacity={hasChat ? 0.7 : 1}
-            onPress={() => hasChat && onPress(group.chatRoomId)}
-            style={[styles.cardContainer, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+            onPress={() => hasChat && onPress(group)}
+            style={[
+                styles.cardContainer,
+                { backgroundColor: colors.surfaceLight, borderColor: colors.border },
+            ]}
         >
-            <Avatar uri={group.avatar} size={56} />
+            <Avatar uri={group.avatar ?? undefined} />
+
             <View style={styles.content}>
                 <View style={styles.headerRow}>
-                    <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
+                    <Text
+                        style={[styles.name, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                    >
                         {group.name}
                     </Text>
                     {group.lastMessageAt && (
@@ -33,12 +47,21 @@ export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
                         </Text>
                     )}
                 </View>
+
                 <View style={styles.footerRow}>
-                    <Text style={[styles.message, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {group.lastMessage?.encryptedContent || "No messages yet"}
+                    <Text
+                        style={[styles.message, { color: colors.textSecondary }]}
+                        numberOfLines={1}
+                    >
+                        {/* lastMessage is now a plain decrypted string from the backend */}
+                        {group.lastMessage || "No messages yet"}
                     </Text>
                     {unreadCount > 0 && (
-                        <Badge label={unreadCount > 99 ? "99+" : String(unreadCount)} type="status" size={18} />
+                        <Badge
+                            label={unreadCount > 99 ? "99+" : String(unreadCount)}
+                            type="status"
+                            size={18}
+                        />
                     )}
                 </View>
             </View>
@@ -66,9 +89,18 @@ const styles = StyleSheet.create({
         }),
     },
     content: { flex: 1, marginLeft: 12 },
-    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 4,
+    },
     name: { fontSize: 16, fontWeight: "600", flex: 1, marginRight: 8 },
     timestamp: { fontSize: 12, fontWeight: "400" },
-    footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
     message: { flex: 1, fontSize: 14, marginRight: 10 },
 });

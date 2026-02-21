@@ -94,8 +94,6 @@ export default function ChatInput({
     setIsUploading(true);
 
     try {
-      // ✅ Single call — useChatEngine owns the socket emit AND the optimistic
-      //    message. No duplicate bubbles, no split responsibilities.
       sendMessage(messageText || "", mediaUris);
     } finally {
       setIsUploading(false);

@@ -1,8 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, RefreshControl, SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useSocket } from "@/api/socketRegistry";
 import CreateGroupModal from "@/components/group/CreateGroupModal";
 import { CreateGroupFAB } from "@/components/ui/CreateGroupFAB";
 import { useCreateGroup } from "@/hooks/mutations/useCreateGroup";
@@ -23,7 +25,7 @@ type GroupType = {
   name: string;
   avatar?: string | null;
   chatRoomId?: string;
-  lastMessage?: any;
+  lastMessage?: string | null;
   lastMessageAt?: string | null;
   privacy: GroupPrivacy;
   memberCount?: number;
@@ -39,6 +41,8 @@ type CreateGroupPayload = FormData | { name: string; privacy: string; avatar: st
 export default function GroupListScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -61,6 +65,46 @@ export default function GroupListScreen() {
   } = useDiscoverGroups(debouncedSearch);
 
   const { mutate: performCreateGroup, isPending: isCreating } = useCreateGroup();
+
+  /* ================= REAL-TIME GROUP BUMP ================= */
+  // When a new message arrives on any room, update that group's lastMessage
+  // and lastMessageAt in the React Query cache and re-sort — no refetch needed.
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (msg: {
+      chatRoomId: string;
+      content: string;
+      createdAt: string;
+    }) => {
+      queryClient.setQueryData<GroupType[]>(["myGroups"], (prev) => {
+        if (!prev) return prev;
+
+        const updated = prev.map((group) => {
+          if (group.chatRoomId !== msg.chatRoomId) return group;
+          return {
+            ...group,
+            lastMessage: msg.content,
+            lastMessageAt: msg.createdAt,
+          };
+        });
+
+        // Sort groups: most recent message first, nulls at the bottom
+        return [...updated].sort((a, b) => {
+          if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+          if (!a.lastMessageAt) return 1;
+          if (!b.lastMessageAt) return -1;
+          return (
+            new Date(b.lastMessageAt).getTime() -
+            new Date(a.lastMessageAt).getTime()
+          );
+        });
+      });
+    };
+
+    socket.on("chat:new_message", handleNewMessage);
+    return () => { socket.off("chat:new_message", handleNewMessage); };
+  }, [socket, queryClient]);
 
   /* ================= HANDLERS ================= */
   const handleGroupPress = useCallback(
@@ -108,12 +152,24 @@ export default function GroupListScreen() {
     return discoverPages?.pages.flatMap((page) => page.groups) ?? [];
   }, [discoverPages]);
 
+  const sortedMyGroups: GroupType[] = useMemo(() => {
+    return [...(myGroups ?? [])].sort((a, b) => {
+      if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+      if (!a.lastMessageAt) return 1;
+      if (!b.lastMessageAt) return -1;
+      return (
+        new Date(b.lastMessageAt).getTime() -
+        new Date(a.lastMessageAt).getTime()
+      );
+    });
+  }, [myGroups]);
+
   const sections: SectionType[] = useMemo(
     () => [
-      { title: "MY GROUPS", data: myGroups ?? [] },
-      { title: "DISCOVER", data: discoverGroups ?? [] },
+      { title: "MY GROUPS", data: sortedMyGroups },
+      { title: "DISCOVER", data: discoverGroups },
     ],
-    [myGroups, discoverGroups]
+    [sortedMyGroups, discoverGroups]
   );
 
   /* ================= RENDER HELPERS ================= */
