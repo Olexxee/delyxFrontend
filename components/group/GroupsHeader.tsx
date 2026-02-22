@@ -1,34 +1,42 @@
-import React from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from "react-native";
+import { Avatar } from "@/components/ui/Avatar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Search } from "lucide-react-native";
+import React, { useRef } from "react";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type Props = {
     searchQuery: string;
     onSearchChange: (text: string) => void;
+    avatarUri?: string;
 };
 
-export const GroupsHeader: React.FC<Props> = ({ searchQuery, onSearchChange }) => {
+export const GroupsHeader: React.FC<Props> = ({ searchQuery, onSearchChange, avatarUri }) => {
     const { colors } = useTheme();
+    const inputRef = useRef<TextInput>(null);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            <Image
-                source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" }}
-                style={styles.avatar}
-            />
+            <Avatar uri={avatarUri} size={36} />
+
             <Text style={[styles.title, { color: colors.textPrimary }]}>Groups</Text>
 
-            <View style={[styles.searchWrapper, { backgroundColor: colors.surfaceLight }]}>
-                <Search size={20} color={colors.textSecondary} />
+            {/* Search takes up remaining space after the title */}
+            <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => inputRef.current?.focus()}
+                style={[styles.searchWrapper, { backgroundColor: colors.surfaceLight }]}
+            >
+                <Search size={18} color={colors.textSecondary} />
                 <TextInput
+                    ref={inputRef}
                     value={searchQuery}
                     onChangeText={onSearchChange}
                     placeholder="Search groups"
                     placeholderTextColor={colors.textSecondary}
                     style={[styles.input, { color: colors.textPrimary }]}
+                    returnKeyType="search"
                 />
-            </View>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -39,19 +47,16 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         flexDirection: "row",
         alignItems: "center",
-    },
-    avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        marginRight: 12,
+        gap: 10,
     },
     title: {
         fontSize: 20,
         fontWeight: "700",
-        flex: 1,
+        // Fixed width instead of flex:1 so the search bar gets real space
+        marginRight: 4,
     },
     searchWrapper: {
+        flex: 1,
         flexDirection: "row",
         alignItems: "center",
         borderRadius: 12,
@@ -62,5 +67,6 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 8,
         fontSize: 14,
+        paddingVertical: 0,
     },
 });

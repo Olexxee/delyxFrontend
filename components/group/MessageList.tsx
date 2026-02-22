@@ -1,6 +1,12 @@
 import { ChatMessage } from "@/hooks/useChatEngine";
-import React, { useCallback } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useRef } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import MessageBubble from "./MessageBubble";
 
 interface MessageListProps {
@@ -9,18 +15,25 @@ interface MessageListProps {
   userId?: string;
 }
 
-export default function MessageList({ messages, loading, userId }: MessageListProps) {
-  // ✅ Stable renderItem reference — FlatList won't re-render all items just
-  //    because the parent re-renders. MessageBubble.memo does the final guard.
+export default function MessageList({ messages, loading }: MessageListProps) {
+  const flatListRef = useRef<FlatList<ChatMessage>>(null);
+
+  // Scroll to the last item (newest message) whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+    }
+  }, [messages]);
+
   const renderItem = useCallback(
     ({ item }: { item: ChatMessage }) => (
       <MessageBubble message={item} isMe={item.isMe} />
     ),
-    // No deps: MessageBubble is memoized and reads its own theme internally.
     [],
   );
 
-  // Stable key extractor
   const keyExtractor = useCallback((item: ChatMessage) => item._id, []);
 
   if (loading) {
@@ -33,24 +46,26 @@ export default function MessageList({ messages, loading, userId }: MessageListPr
 
   return (
     <FlatList<ChatMessage>
+      ref={flatListRef}
       data={messages}
-      inverted
-      // ✅ No scrollToOffset useEffect needed — `inverted` already anchors the
-      //    list to the newest message. Adding scrollToOffset causes a double-
-      //    scroll jump on every new message.
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
       keyboardShouldPersistTaps="handled"
-      // Performance tuning
+      // Virtualisation — only render what's on screen
       removeClippedSubviews
       initialNumToRender={20}
       maxToRenderPerBatch={10}
       updateCellsBatchingPeriod={50}
       windowSize={10}
-      // Only pass extraData if something outside the message object affects
-      // rendering (e.g., a selected/highlighted message id). Passing `messages`
-      // itself as extraData would defeat the purpose of memoization.
+      // Scroll anchors to newest message on mount
+      initialScrollIndex={messages.length > 0 ? messages.length - 1 : undefined}
+      // Required when using initialScrollIndex
+      getItemLayout={(_data, index) => ({
+        length: 80,
+        offset: 80 * index,
+        index,
+      })}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No messages yet. Say hi!</Text>
@@ -61,16 +76,17 @@ export default function MessageList({ messages, loading, userId }: MessageListPr
 }
 
 const styles = StyleSheet.create({
-  listContainer: { paddingHorizontal: 16, paddingVertical: 10 },
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexGrow: 1,
+    justifyContent: "flex-end",
+  },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    // FlatList is inverted (scaleY: -1 on the list), so the empty component
-    // needs to be flipped back to display text the right way up.
-    transform: [{ scaleY: -1 }],
-    marginTop: 50,
   },
   emptyText: { color: "#888", fontSize: 14 },
 });

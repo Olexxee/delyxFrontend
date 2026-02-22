@@ -6,6 +6,9 @@ export interface Group {
   avatar?: string | null;
   privacy: GroupPrivacy;
   memberCount?: number;
+  chatRoomId?: string;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
 }
 
 export interface DiscoverGroupsResponse {

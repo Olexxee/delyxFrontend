@@ -1,7 +1,6 @@
-import { Text } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import ChatContainer from "@/components/group/ChatContainer";
-import { API_BASE_URL } from "@/api/api";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Text } from "react-native";
 
 type Params = {
   chatRoomId?: string;
@@ -17,9 +16,7 @@ export default function GroupChatScreen() {
     return <Text>Invalid chat</Text>;
   }
 
-  const avatarUri = avatar
-    ? `${API_BASE_URL}/files/${avatar}`
-    : undefined;
+  const avatarUri = avatar || undefined;
 
   return (
     <ChatContainer

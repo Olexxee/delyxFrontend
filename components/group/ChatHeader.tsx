@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { ChevronLeft, Shield, Info } from "lucide-react-native";
-import { useTheme } from "@/theme/ThemeProvider";
 import { Avatar } from "@/components/ui/Avatar";
+import { useTheme } from "@/theme/ThemeProvider";
+import { ChevronLeft, Info, Shield } from "lucide-react-native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface ChatHeaderProps {
   name: string;

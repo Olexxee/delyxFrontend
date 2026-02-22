@@ -3,10 +3,6 @@ import { useSocket } from "@/api/socketRegistry";
 import { useAsyncState } from "@/utils/useAsyncState";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-/* ---------------------------------- */
-/* Types                              */
-/* ---------------------------------- */
-
 export interface BackendMessage {
   _id: string;
   chatRoomId: string;
@@ -26,13 +22,7 @@ export interface ChatMessage {
   isMe: boolean;
 }
 
-/* ---------------------------------- */
-/* Helpers                            */
-/* ---------------------------------- */
-
 function normaliseMessage(msg: BackendMessage, userId: string): ChatMessage {
-  // Guarantee sender is always a valid object — never null/undefined.
-  // MessageBubble and other consumers can safely access sender.username.
   const sender = {
     _id: msg.sender?._id ?? "unknown",
     username: msg.sender?.username ?? "Unknown",
@@ -52,9 +42,8 @@ function normaliseMessage(msg: BackendMessage, userId: string): ChatMessage {
   };
 }
 
-/* ---------------------------------- */
-/* Hook                               */
-/* ---------------------------------- */
+const sortAscending = (a: ChatMessage, b: ChatMessage) =>
+  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 
 export function useChatEngine(chatRoomId: string, userId: string) {
   const { socket, isConnected } = useSocket();
@@ -94,12 +83,7 @@ export function useChatEngine(chatRoomId: string, userId: string) {
             }
           })
           .filter((m): m is ChatMessage => m !== null)
-          .sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-          );
-
-        console.log("Hydrated messages:", hydrated);
+          .sort(sortAscending);
 
         setMessages(hydrated);
       } catch (err) {
@@ -141,12 +125,19 @@ export function useChatEngine(chatRoomId: string, userId: string) {
       setMessages((prev) => {
         const safePrev = prev ?? [];
 
-        if (safePrev.some((m) => m._id === newMsg._id)) return prev;
+        const withoutTemp = safePrev.filter((m) => {
+          if (m._id === newMsg._id) return false;
+          if (
+            m._id.startsWith("temp-") &&
+            m.isMe &&
+            newMsg.isMe &&
+            m.content === newMsg.content
+          )
+            return false;
+          return true;
+        });
 
-        return [...safePrev, newMsg].sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        );
+        return [...withoutTemp, newMsg].sort(sortAscending);
       });
     },
     [chatRoomId, setMessages],
@@ -165,27 +156,29 @@ export function useChatEngine(chatRoomId: string, userId: string) {
     async (content: string, media: string[] = []) => {
       if (!chatRoomId) return;
 
+      const tempMsg: ChatMessage = {
+        _id: `temp-${Date.now()}`,
+        chatRoomId,
+        content,
+        sender: { _id: userIdRef.current, username: "Me" },
+        media,
+        createdAt: new Date().toISOString(),
+        isMe: true,
+      };
+
+      // ✅ Sort after inserting the optimistic bubble so it lands at the correct
+      // position (end of ascending array = bottom of the inverted FlatList).
+      // Previously [...prev, tempMsg] without sorting put the temp message at
+      // the last index, which inverted renders at the TOP of the screen.
+      setMessages((prev) => [...(prev ?? []), tempMsg].sort(sortAscending));
+
       try {
-        // Optimistic UI update
-        const tempMsg: ChatMessage = {
-          _id: `temp-${Date.now()}`,
-          chatRoomId,
-          content,
-          sender: { _id: userIdRef.current, username: "Me" },
-          media,
-          createdAt: new Date().toISOString(),
-          isMe: true,
-        };
-
-        setMessages((prev) => [...(prev ?? []), tempMsg]);
-
-        // Call REST endpoint
         await sendChatMessage(chatRoomId, content);
-
-        // DO NOT manually emit socket event here
-        // Backend should emit "chat:new_message" after saving
       } catch (error) {
         console.error("Failed to send message:", error);
+        setMessages((prev) =>
+          (prev ?? []).filter((m) => m._id !== tempMsg._id),
+        );
       }
     },
     [chatRoomId, setMessages],

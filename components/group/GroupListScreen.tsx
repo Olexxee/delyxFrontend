@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, RefreshControl, SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useSearchGroups } from "@/api/groups.api";
 import { useSocket } from "@/api/socketRegistry";
 import CreateGroupModal from "@/components/group/CreateGroupModal";
 import { CreateGroupFAB } from "@/components/ui/CreateGroupFAB";
@@ -147,6 +148,8 @@ export default function GroupListScreen() {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const { data: searchResults = [], isLoading: isSearching } = useSearchGroups(debouncedSearch);
+
   /* ================= DATA PROCESSING ================= */
   const discoverGroups: GroupType[] = useMemo(() => {
     return discoverPages?.pages.flatMap((page) => page.groups) ?? [];
@@ -167,9 +170,12 @@ export default function GroupListScreen() {
   const sections: SectionType[] = useMemo(
     () => [
       { title: "MY GROUPS", data: sortedMyGroups },
-      { title: "DISCOVER", data: discoverGroups },
+      {
+        title: debouncedSearch.trim() ? "SEARCH RESULTS" : "DISCOVER",
+        data: debouncedSearch.trim() ? searchResults : discoverGroups,
+      },
     ],
-    [sortedMyGroups, discoverGroups]
+    [sortedMyGroups, discoverGroups, searchResults, debouncedSearch]
   );
 
   /* ================= RENDER HELPERS ================= */

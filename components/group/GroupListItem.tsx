@@ -22,6 +22,16 @@ export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
     const hasChat = !!group.chatRoomId;
     const unreadCount = Number(group.unreadCount) || 0;
 
+    // group.avatar may be a plain string, an object { url: string }, or null.
+    // Coerce to a string so Avatar always receives a usable URI.
+    const rawAvatar = group.avatar as any;
+    const avatarUri: string | undefined =
+        typeof rawAvatar === "string"
+            ? rawAvatar || undefined
+            : typeof rawAvatar?.url === "string"
+                ? rawAvatar.url || undefined
+                : undefined;
+
     return (
         <TouchableOpacity
             activeOpacity={hasChat ? 0.7 : 1}
@@ -31,7 +41,7 @@ export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
                 { backgroundColor: colors.surfaceLight, borderColor: colors.border },
             ]}
         >
-            <Avatar uri={group.avatar ?? undefined} />
+            <Avatar uri={avatarUri} />
 
             <View style={styles.content}>
                 <View style={styles.headerRow}>
