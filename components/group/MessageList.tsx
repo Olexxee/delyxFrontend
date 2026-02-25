@@ -1,4 +1,5 @@
 import { ChatMessage } from "@/hooks/useChatEngine";
+import { useTheme } from "@/theme/ThemeProvider";
 import React, { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -15,12 +16,51 @@ interface MessageListProps {
   userId?: string;
 }
 
-export default function MessageList({ messages, loading }: MessageListProps) {
-  const flatListRef = useRef<FlatList<ChatMessage>>(null);
+type ListItem =
+  | { type: "message"; data: ChatMessage }
+  | { type: "dateSeparator"; label: string; key: string };
 
-  // Scroll to the last item (newest message) whenever messages change
+function formatDateLabel(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
+function buildListItems(messages: ChatMessage[]): ListItem[] {
+  const items: ListItem[] = [];
+  let lastDateStr = "";
+
+  for (const msg of messages) {
+    const date = new Date(msg.createdAt);
+    const dateStr = date.toDateString();
+
+    if (dateStr !== lastDateStr) {
+      items.push({
+        type: "dateSeparator",
+        label: formatDateLabel(date),
+        key: `sep-${dateStr}`,
+      });
+      lastDateStr = dateStr;
+    }
+
+    items.push({ type: "message", data: msg });
+  }
+
+  return items;
+}
+
+export default function MessageList({ messages, loading }: MessageListProps) {
+  const { colors } = useTheme();
+  const flatListRef = useRef<FlatList<ListItem>>(null);
+
+  const listItems = buildListItems(messages);
+
   useEffect(() => {
-    if (messages.length > 0) {
+    if (listItems.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 50);
@@ -28,13 +68,26 @@ export default function MessageList({ messages, loading }: MessageListProps) {
   }, [messages]);
 
   const renderItem = useCallback(
-    ({ item }: { item: ChatMessage }) => (
-      <MessageBubble message={item} isMe={item.isMe} />
-    ),
-    [],
+    ({ item }: { item: ListItem }) => {
+      if (item.type === "dateSeparator") {
+        return (
+          <View style={styles.separatorRow}>
+            <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.separatorText, { color: colors.textSecondary }]}>
+              {item.label}
+            </Text>
+            <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
+          </View>
+        );
+      }
+      return <MessageBubble message={item.data} isMe={item.data.isMe} />;
+    },
+    [colors],
   );
 
-  const keyExtractor = useCallback((item: ChatMessage) => item._id, []);
+  const keyExtractor = useCallback((item: ListItem) => {
+    return item.type === "dateSeparator" ? item.key : item.data._id;
+  }, []);
 
   if (loading) {
     return (
@@ -45,30 +98,23 @@ export default function MessageList({ messages, loading }: MessageListProps) {
   }
 
   return (
-    <FlatList<ChatMessage>
+    <FlatList<ListItem>
       ref={flatListRef}
-      data={messages}
+      data={listItems}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
       keyboardShouldPersistTaps="handled"
-      // Virtualisation — only render what's on screen
       removeClippedSubviews
       initialNumToRender={20}
       maxToRenderPerBatch={10}
       updateCellsBatchingPeriod={50}
       windowSize={10}
-      // Scroll anchors to newest message on mount
-      initialScrollIndex={messages.length > 0 ? messages.length - 1 : undefined}
-      // Required when using initialScrollIndex
-      getItemLayout={(_data, index) => ({
-        length: 80,
-        offset: 80 * index,
-        index,
-      })}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No messages yet. Say hi!</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            No messages yet. Say hi! 👋
+          </Text>
         </View>
       }
     />
@@ -78,7 +124,7 @@ export default function MessageList({ messages, loading }: MessageListProps) {
 const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     flexGrow: 1,
     justifyContent: "flex-end",
   },
@@ -88,5 +134,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyText: { color: "#888", fontSize: 14 },
+  emptyText: { fontSize: 14 },
+  separatorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+    paddingHorizontal: 4,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+  },
+  separatorText: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginHorizontal: 12,
+  },
 });

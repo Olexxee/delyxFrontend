@@ -13,6 +13,7 @@
     "tunnel": "node start-tunnel.js"
   },
   "dependencies": {
+    "@react-native-community/cli": "latest",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-firebase/messaging": "^23.8.3",

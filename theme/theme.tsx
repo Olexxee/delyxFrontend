@@ -1,7 +1,16 @@
-import { Colors } from "./color";
+import { ColorsType, DarkColors, LightColors } from "./color";
 
-export const DarkTheme = {
-  colors: Colors,
+export type Theme = {
+  colors: ColorsType;
+  mode: "light" | "dark";
 };
 
-export type Theme = typeof DarkTheme;
+export const DarkTheme: Theme = {
+  colors: DarkColors as ColorsType,
+  mode: "dark",
+};
+
+export const LightTheme: Theme = {
+  colors: LightColors as unknown as ColorsType,
+  mode: "light",
+};

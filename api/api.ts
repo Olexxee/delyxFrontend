@@ -2,7 +2,7 @@ import { STORAGE_KEYS } from "@/constants/storageKeys";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-export const API_BASE_URL = "https://responsible-refugee.outray.app/api/v1";
+export const API_BASE_URL = "https://impatient-motmot.outray.app/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -12,6 +12,7 @@ import { UserContext } from "@/authContext/UserContext";
 import ChatHeader from "@/components/group/ChatHeader";
 import ChatInput from "@/components/group/ChatInput";
 import MessageList from "@/components/group/MessageList";
+import TournamentCard from "@/components/tournament/TournamentCard";
 import { useChatEngine } from "@/hooks/useChatEngine";
 import { useTheme } from "@/theme/ThemeProvider";
 
@@ -19,34 +20,29 @@ type ChatContainerProps = {
   chatRoomId: string;
   name: string;
   avatarUri?: string;
+  memberCount?: number;
   onBack: () => void;
+  tournamentId?: string;
 };
 
 export default function ChatContainer({
   chatRoomId,
   name,
   avatarUri,
+  memberCount,
   onBack,
+  tournamentId,
 }: ChatContainerProps) {
   const { user, isRestoring } = useContext(UserContext);
   const { colors } = useTheme();
 
-  // Support both _id (MongoDB) and id (REST) shapes so this doesn't silently
-  // break if the User type changes. The log showed user._id was undefined.
   const userId = (user as any)?._id ?? (user as any)?.id ?? "";
 
-  // Hooks must always be called unconditionally — before any early returns.
-  // userId is "" while the session restores; the hook guards on it internally.
   const { messages, loading, sendMessage, isConnected } = useChatEngine(
     chatRoomId,
     userId,
   );
 
-  // Block render until AsyncStorage finishes restoring the session.
-  // Previously we only guarded on !user, but isRestoring=true means user is
-  // still null while the async read is in flight — so useChatEngine was firing
-  // with userId="" on every mount, the guard blocked hydration, and the effect
-  // never re-ran because userId never changed from "" to a real value.
   if (isRestoring || !user) {
     return (
       <View style={styles.centered}>
@@ -57,15 +53,30 @@ export default function ChatContainer({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.surface }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ChatHeader name={name} avatarUri={avatarUri} onBack={onBack} />
+      <ChatHeader
+        name={name}
+        avatarUri={avatarUri}
+        memberCount={memberCount}
+        onBack={onBack}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
+        {/* Pinned tournament card — shown when a tournament is linked */}
+        {tournamentId && (
+          <TournamentCard
+            tournamentId={tournamentId}
+            onPress={() => {
+              // TODO: navigate to tournament detail
+            }}
+          />
+        )}
+
         <MessageList messages={messages} loading={loading} />
 
         <ChatInput

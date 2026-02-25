@@ -1,9 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, RefreshControl, SectionList, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
 import { useSearchGroups } from "@/api/groups.api";
 import { useSocket } from "@/api/socketRegistry";
 import CreateGroupModal from "@/components/group/CreateGroupModal";
@@ -13,8 +7,12 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useDiscoverGroups } from "@/hooks/useDiscoverGroups";
 import { useMyGroups } from "@/hooks/useMyGroups";
 import { useTheme } from "@/theme/ThemeProvider";
-
 import type { GroupPrivacy } from "@/types/group";
+import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, RefreshControl, SectionList, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { DiscoverGroupItem } from "./DiscoverGroupItem";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
 import { GroupListItem } from "./GroupListItem";
@@ -48,6 +46,7 @@ export default function GroupListScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 400);
+  const isSearching = debouncedSearch.trim().length > 0;
 
   /* ================= QUERIES & MUTATIONS ================= */
   const {
@@ -65,11 +64,21 @@ export default function GroupListScreen() {
     refetch: refetchDiscover,
   } = useDiscoverGroups(debouncedSearch);
 
+  const {
+    data: searchResults = [],
+    isLoading: isSearchLoading,
+  } = useSearchGroups(debouncedSearch);
+
   const { mutate: performCreateGroup, isPending: isCreating } = useCreateGroup();
 
+  /* ================= REFETCH ON FOCUS ================= */
+  useFocusEffect(
+    useCallback(() => {
+      refetchMyGroups();
+    }, [refetchMyGroups])
+  );
+
   /* ================= REAL-TIME GROUP BUMP ================= */
-  // When a new message arrives on any room, update that group's lastMessage
-  // and lastMessageAt in the React Query cache and re-sort — no refetch needed.
   useEffect(() => {
     if (!socket) return;
 
@@ -81,16 +90,19 @@ export default function GroupListScreen() {
       queryClient.setQueryData<GroupType[]>(["myGroups"], (prev) => {
         if (!prev) return prev;
 
+        const targetGroup = prev.find((g) => g.chatRoomId === msg.chatRoomId);
+        if (!targetGroup) return prev;
+
         const updated = prev.map((group) => {
           if (group.chatRoomId !== msg.chatRoomId) return group;
           return {
             ...group,
             lastMessage: msg.content,
             lastMessageAt: msg.createdAt,
+            unreadCount: (Number((group as any).unreadCount) || 0) + 1,
           };
         });
 
-        // Sort groups: most recent message first, nulls at the bottom
         return [...updated].sort((a, b) => {
           if (!a.lastMessageAt && !b.lastMessageAt) return 0;
           if (!a.lastMessageAt) return 1;
@@ -115,12 +127,20 @@ export default function GroupListScreen() {
         return;
       }
 
+      const rawAvatar = group.avatar as any;
+      const avatarUrl: string =
+        typeof rawAvatar === "string"
+          ? rawAvatar
+          : typeof rawAvatar?.url === "string"
+            ? rawAvatar.url
+            : "";
+
       router.push({
         pathname: "/(chats)/[chatRoomId]",
         params: {
           chatRoomId: group.chatRoomId,
           name: group.name,
-          avatar: group.avatar ?? "",
+          avatar: avatarUrl,
         },
       });
     },
@@ -132,8 +152,14 @@ export default function GroupListScreen() {
       if (!payload) return;
 
       performCreateGroup(payload, {
-        onSuccess: () => {
+        onSuccess: (newGroup: GroupType) => {
           setIsModalVisible(false);
+          if (newGroup) {
+            queryClient.setQueryData<GroupType[]>(["myGroups"], (prev = []) => [
+              { ...newGroup, lastMessageAt: new Date().toISOString() },
+              ...prev.filter((g) => g.id !== newGroup.id && g._id !== newGroup._id),
+            ]);
+          }
           refetchMyGroups();
           Alert.alert("Success", "Group created successfully!");
         },
@@ -141,14 +167,12 @@ export default function GroupListScreen() {
           Alert.alert("Error", error?.message || "Failed to create group"),
       });
     },
-    [performCreateGroup, refetchMyGroups]
+    [performCreateGroup, refetchMyGroups, queryClient]
   );
 
   const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  const { data: searchResults = [], isLoading: isSearching } = useSearchGroups(debouncedSearch);
+    if (!isSearching && hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   /* ================= DATA PROCESSING ================= */
   const discoverGroups: GroupType[] = useMemo(() => {
@@ -171,11 +195,11 @@ export default function GroupListScreen() {
     () => [
       { title: "MY GROUPS", data: sortedMyGroups },
       {
-        title: debouncedSearch.trim() ? "SEARCH RESULTS" : "DISCOVER",
-        data: debouncedSearch.trim() ? searchResults : discoverGroups,
+        title: isSearching ? "SEARCH RESULTS" : "DISCOVER",
+        data: isSearching ? (searchResults as GroupType[]) : discoverGroups,
       },
     ],
-    [sortedMyGroups, discoverGroups, searchResults, debouncedSearch]
+    [sortedMyGroups, discoverGroups, searchResults, isSearching]
   );
 
   /* ================= RENDER HELPERS ================= */
@@ -197,13 +221,7 @@ export default function GroupListScreen() {
       if (!section) return null;
 
       return (
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            backgroundColor: colors.surface,
-          }}
-        >
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.surface }}>
           <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
             {section.title}
           </Text>
@@ -238,7 +256,7 @@ export default function GroupListScreen() {
         onEndReachedThreshold={0.4}
         refreshControl={
           <RefreshControl
-            refreshing={false}
+            refreshing={isSearchLoading}
             onRefresh={() => {
               refetchMyGroups();
               refetchDiscover();
