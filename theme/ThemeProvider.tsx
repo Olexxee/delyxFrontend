@@ -1,7 +1,6 @@
-// ThemeProvider.tsx
-import { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { useColorScheme } from "react-native";
-import { Theme, DarkTheme, LightTheme } from "./theme";
+import { DarkTheme, LightTheme, Theme } from "./theme";
 
 type ThemeContextType = Theme & {
   toggleTheme: () => void;

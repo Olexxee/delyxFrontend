@@ -24,8 +24,8 @@ export const getDiscoverGroups = async (
         name: g.name,
         avatar:
           typeof g.avatar === "string" ? g.avatar : (g.avatar?.url ?? null),
-        privacy: "public", // update if backend returns privacy
-        memberCount: g.totalMembers ?? 0,
+        privacy: "public",
+        totalMembers: g.totalMembers ?? 0,
         description: g.description ?? "",
         myRole: g.myRole ?? null,
         tournamentsPreview: g.tournamentsPreview ?? [],
@@ -45,7 +45,7 @@ const searchGroupsByName = async (name: string): Promise<GroupOverview[]> => {
       name: g.name,
       avatar: typeof g.avatar === "string" ? g.avatar : (g.avatar?.url ?? null),
       privacy: g.privacy ?? "public",
-      memberCount: g.totalMembers ?? 0,
+      totalMembers: g.totalMembers ?? 0,
       chatRoomId: g.chatRoomId,
       description: g.description ?? "",
       myRole: g.myRole ?? null,
@@ -69,7 +69,7 @@ export function useGroupInfo(groupId?: string) {
     queryKey: ["group", groupId],
     queryFn: async () => {
       const res = await api.get(`/groups/${groupId}/overview`);
-      return res.data;
+      return res.data.data;
     },
     enabled: !!groupId,
   });

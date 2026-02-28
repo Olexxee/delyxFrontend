@@ -1,4 +1,5 @@
 import { SocketProvider } from "@/api/socketRegistry";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,11 +39,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <SocketProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-        </SocketProvider>
-      </UserProvider>
+      <ThemeProvider>
+        <UserProvider>
+          <SocketProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </SocketProvider>
+        </UserProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

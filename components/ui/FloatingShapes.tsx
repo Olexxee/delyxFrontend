@@ -1,7 +1,7 @@
-import { Animated, Dimensions } from "react-native";
 import { Shapes } from "@/theme/shapes";
-import { Colors } from "@/theme/color";
+import { useTheme } from "@/theme/ThemeProvider";
 import { useEffect, useRef } from "react";
+import { Animated, Dimensions } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -13,6 +13,7 @@ const ShapeIcons: Record<string, string> = {
 };
 
 export function FloatingShapes({ count = 6 }) {
+  const { colors } = useTheme();
   const floatingShapes = useRef(
     Array.from({ length: count }).map(() => ({
       x: Math.random() * SCREEN_WIDTH,
@@ -22,7 +23,7 @@ export function FloatingShapes({ count = 6 }) {
       rotate: new Animated.Value(Math.random()),
       shape:
         Object.values(Shapes)[
-          Math.floor(Math.random() * Object.values(Shapes).length)
+        Math.floor(Math.random() * Object.values(Shapes).length)
         ],
     }))
   ).current;
@@ -72,7 +73,7 @@ export function FloatingShapes({ count = 6 }) {
           style={{
             position: "absolute",
             fontSize: 48,
-            color: Colors.primary + "55",
+            color: colors.primary + "55",
             opacity: shape.opacity,
             transform: [
               { translateX: shape.x },

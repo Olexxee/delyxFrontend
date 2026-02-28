@@ -7,35 +7,40 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useDiscoverGroups } from "@/hooks/useDiscoverGroups";
 import { useMyGroups } from "@/hooks/useMyGroups";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { GroupPrivacy } from "@/types/group";
+import type { GroupOverview } from "@/types/group";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, RefreshControl, SectionList, Text, View } from "react-native";
+import { Alert, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DiscoverGroupItem } from "./DiscoverGroupItem";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
 import { GroupListItem } from "./GroupListItem";
 import { GroupsHeader } from "./GroupsHeader";
 
-type GroupType = {
-  id: string;
-  _id?: string;
-  name: string;
-  avatar?: string | null;
-  chatRoomId?: string;
-  lastMessage?: string | null;
-  lastMessageAt?: string | null;
-  privacy: GroupPrivacy;
-  memberCount?: number;
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type SectionType = {
   title: string;
-  data: GroupType[];
+  data: GroupOverview[];
 };
 
-type CreateGroupPayload = FormData | { name: string; privacy: string; avatar: string | null };
+type CreateGroupPayload =
+  | FormData
+  | { name: string; privacy: string; avatar: string | null };
+
+// ─── Sort helper (defined outside component to avoid re-creation) ─────────────
+
+const sortByLastMessage = (a: GroupOverview, b: GroupOverview) => {
+  const aTime = (a as any).lastMessageAt;
+  const bTime = (b as any).lastMessageAt;
+  if (!aTime && !bTime) return 0;
+  if (!aTime) return 1;
+  if (!bTime) return -1;
+  return new Date(bTime).getTime() - new Date(aTime).getTime();
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function GroupListScreen() {
   const { colors } = useTheme();
@@ -87,7 +92,7 @@ export default function GroupListScreen() {
       content: string;
       createdAt: string;
     }) => {
-      queryClient.setQueryData<GroupType[]>(["myGroups"], (prev) => {
+      queryClient.setQueryData<GroupOverview[]>(["myGroups"], (prev) => {
         if (!prev) return prev;
 
         const targetGroup = prev.find((g) => g.chatRoomId === msg.chatRoomId);
@@ -103,25 +108,19 @@ export default function GroupListScreen() {
           };
         });
 
-        return [...updated].sort((a, b) => {
-          if (!a.lastMessageAt && !b.lastMessageAt) return 0;
-          if (!a.lastMessageAt) return 1;
-          if (!b.lastMessageAt) return -1;
-          return (
-            new Date(b.lastMessageAt).getTime() -
-            new Date(a.lastMessageAt).getTime()
-          );
-        });
+        return [...updated].sort(sortByLastMessage);
       });
     };
 
     socket.on("chat:new_message", handleNewMessage);
-    return () => { socket.off("chat:new_message", handleNewMessage); };
+    return () => {
+      socket.off("chat:new_message", handleNewMessage);
+    };
   }, [socket, queryClient]);
 
   /* ================= HANDLERS ================= */
   const handleGroupPress = useCallback(
-    (group: GroupType) => {
+    (group: GroupOverview) => {
       if (!group.chatRoomId || !group.name) {
         Alert.alert("Invalid group", "This group cannot be opened at the moment.");
         return;
@@ -141,6 +140,7 @@ export default function GroupListScreen() {
           chatRoomId: group.chatRoomId,
           name: group.name,
           avatar: avatarUrl,
+          groupId: group.id ?? "",
         },
       });
     },
@@ -152,12 +152,12 @@ export default function GroupListScreen() {
       if (!payload) return;
 
       performCreateGroup(payload, {
-        onSuccess: (newGroup: GroupType) => {
+        onSuccess: (newGroup: GroupOverview) => {
           setIsModalVisible(false);
           if (newGroup) {
-            queryClient.setQueryData<GroupType[]>(["myGroups"], (prev = []) => [
-              { ...newGroup, lastMessageAt: new Date().toISOString() },
-              ...prev.filter((g) => g.id !== newGroup.id && g._id !== newGroup._id),
+            queryClient.setQueryData<GroupOverview[]>(["myGroups"], (prev = []) => [
+              { ...newGroup, lastMessageAt: new Date().toISOString() } as GroupOverview,
+              ...prev.filter((g) => g.id !== newGroup.id),
             ]);
           }
           refetchMyGroups();
@@ -175,20 +175,12 @@ export default function GroupListScreen() {
   }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   /* ================= DATA PROCESSING ================= */
-  const discoverGroups: GroupType[] = useMemo(() => {
+  const discoverGroups: GroupOverview[] = useMemo(() => {
     return discoverPages?.pages.flatMap((page) => page.groups) ?? [];
   }, [discoverPages]);
 
-  const sortedMyGroups: GroupType[] = useMemo(() => {
-    return [...(myGroups ?? [])].sort((a, b) => {
-      if (!a.lastMessageAt && !b.lastMessageAt) return 0;
-      if (!a.lastMessageAt) return 1;
-      if (!b.lastMessageAt) return -1;
-      return (
-        new Date(b.lastMessageAt).getTime() -
-        new Date(a.lastMessageAt).getTime()
-      );
-    });
+  const sortedMyGroups: GroupOverview[] = useMemo(() => {
+    return [...(myGroups ?? [])].sort(sortByLastMessage);
   }, [myGroups]);
 
   const sections: SectionType[] = useMemo(
@@ -196,7 +188,7 @@ export default function GroupListScreen() {
       { title: "MY GROUPS", data: sortedMyGroups },
       {
         title: isSearching ? "SEARCH RESULTS" : "DISCOVER",
-        data: isSearching ? (searchResults as GroupType[]) : discoverGroups,
+        data: isSearching ? (searchResults as GroupOverview[]) : discoverGroups,
       },
     ],
     [sortedMyGroups, discoverGroups, searchResults, isSearching]
@@ -204,11 +196,11 @@ export default function GroupListScreen() {
 
   /* ================= RENDER HELPERS ================= */
   const renderItem = useCallback(
-    ({ item, section }: { item: GroupType; section: SectionType }) => {
+    ({ item, section }: { item: GroupOverview; section: SectionType }) => {
       if (!item || !section) return null;
 
       if (section.title === "MY GROUPS") {
-        return <GroupListItem group={item} onPress={() => handleGroupPress(item)} />;
+        return <GroupListItem group={item} onPress={handleGroupPress} />;
       }
 
       return <DiscoverGroupItem group={item} onPressInfo={() => undefined} />;
@@ -221,8 +213,8 @@ export default function GroupListScreen() {
       if (!section) return null;
 
       return (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.surface }}>
-          <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
+        <View style={[styles.sectionHeader, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             {section.title}
           </Text>
         </View>
@@ -234,7 +226,7 @@ export default function GroupListScreen() {
   /* ================= RENDER ================= */
   if (isMyGroupsLoading || isDiscoverLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: colors.surface }]}>
         <GroupsHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         {Array.from({ length: 6 }).map((_, i) => (
           <GroupCardSkeleton key={i} />
@@ -244,16 +236,17 @@ export default function GroupListScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.surface }]}>
       <GroupsHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <SectionList
         sections={sections}
-        keyExtractor={(item, index) => item._id ?? item.id ?? String(index)}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         renderSectionHeader={renderSectionHeader}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.4}
+        removeClippedSubviews
         refreshControl={
           <RefreshControl
             refreshing={isSearchLoading}
@@ -264,7 +257,7 @@ export default function GroupListScreen() {
             tintColor={colors.accent}
           />
         }
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled
       />
 
@@ -279,3 +272,17 @@ export default function GroupListScreen() {
     </SafeAreaView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  listContent: { paddingBottom: 100 },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  sectionTitle: {
+    fontWeight: "700",
+  },
+});

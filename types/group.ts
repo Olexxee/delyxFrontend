@@ -12,11 +12,12 @@ export type TournamentStatus =
 
 export type GroupOverview = {
   id: string;
+  _id?: string;
   name: string;
   description: string;
   avatar?: string | null;
   privacy: GroupPrivacy;
-  memberCount: number;
+  totalMembers: number;
   chatRoomId?: string;
   myRole: Role;
 
@@ -31,6 +32,7 @@ export type GroupOverview = {
 
 export type MemberSummary = {
   id: string;
+  _id?: string;
   displayName: string;
   avatarUri?: string;
   role: Role;

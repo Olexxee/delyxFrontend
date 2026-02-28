@@ -17,13 +17,11 @@ type Props = {
     onPress: (group: any) => void;
 };
 
-export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
+export const GroupListItem = React.memo(({ group, onPress }: Props) => {
     const { colors } = useTheme();
     const hasChat = !!group.chatRoomId;
     const unreadCount = Number(group.unreadCount) || 0;
 
-    // group.avatar may be a plain string, an object { url: string }, or null.
-    // Coerce to a string so Avatar always receives a usable URI.
     const rawAvatar = group.avatar as any;
     const avatarUri: string | undefined =
         typeof rawAvatar === "string"
@@ -77,7 +75,7 @@ export const GroupListItem: React.FC<Props> = ({ group, onPress }) => {
             </View>
         </TouchableOpacity>
     );
-};
+});
 
 const styles = StyleSheet.create({
     cardContainer: {

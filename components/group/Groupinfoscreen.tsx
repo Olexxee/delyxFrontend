@@ -6,10 +6,10 @@ import { GroupInfoView } from "./GroupInfoView";
 export default function GroupInfoScreen() {
     const router = useRouter();
     const { groupId } = useLocalSearchParams<{ groupId: string }>();
+    const { data: group, isLoading } = useGroupInfo(groupId);
+    console.log("Route groupId:", groupId);
 
-    const { data: group } = useGroupInfo(groupId);
-
-    if (!group) return null;
+    if (isLoading || !group) return null;
 
     return (
         <GroupInfoView

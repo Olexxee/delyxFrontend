@@ -1,9 +1,16 @@
 import { Avatar } from "@/components/ui/Avatar";
 import { useTheme } from "@/theme/ThemeProvider";
-import { ChevronLeft, Info, Shield } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ChevronLeft, Info, Shield } from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface ChatHeaderProps {
   name: string;
@@ -24,54 +31,99 @@ export default function ChatHeader({
 }: ChatHeaderProps) {
   const { colors } = useTheme();
   const router = useRouter();
+  const [showAvatar, setShowAvatar] = useState(false);
 
   const handleOpenGroupInfo = () => {
-    if (!groupId && !chatRoomId) return;
+    const id = groupId ?? chatRoomId;
+
+    console.log("Opening Group Info with ID:", id);
+
+    if (!id) return;
+
     router.push({
       pathname: "/(groups)/group-info",
-      params: {
-        groupId: groupId ?? chatRoomId,
-        name,
-        avatar: avatarUri ?? "",
-      },
+      params: { groupId: id },
     });
   };
 
   return (
-    <View style={[styles.header, { borderBottomColor: colors.border }]}>
-      <TouchableOpacity onPress={onBack} style={styles.headerBtn}>
-        <ChevronLeft color={colors.textPrimary} size={28} />
-      </TouchableOpacity>
-
-      {/* Tappable center area → Group Info */}
-      <TouchableOpacity
-        style={styles.centerArea}
-        onPress={handleOpenGroupInfo}
-        activeOpacity={0.7}
+    <>
+      <View
+        style={[
+          styles.header,
+          {
+            borderBottomColor: colors.border,
+            backgroundColor: colors.surface,
+          },
+        ]}
       >
-        <Avatar uri={avatarUri} size={40} />
+        {/* Back */}
+        <TouchableOpacity
+          onPress={onBack}
+          style={styles.sideButton}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft color={colors.textPrimary} size={26} />
+        </TouchableOpacity>
 
-        <View style={styles.headerInfo}>
-          <Text
-            style={[styles.headerName, { color: colors.textPrimary }]}
-            numberOfLines={1}
+        {/* Center (Avatar + Name) */}
+        <TouchableOpacity
+          style={styles.centerArea}
+          onPress={handleOpenGroupInfo}
+          activeOpacity={0.8}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              console.log("Avatar Pressed");
+              setShowAvatar(true);
+            }}
+            activeOpacity={0.8}
           >
-            {name}
-          </Text>
+            <Avatar uri={avatarUri} size={42} />
+          </TouchableOpacity>
 
-          <View style={styles.encryptionBadge}>
-            <Shield size={10} color={colors.accent} />
-            <Text style={[styles.encryptionText, { color: colors.accent }]}>
-              {" "}End-to-end Encrypted
+          <View style={styles.headerInfo}>
+            <Text
+              style={[styles.headerName, { color: colors.textPrimary }]}
+              numberOfLines={1}
+            >
+              {name}
             </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.headerBtn} onPress={handleOpenGroupInfo}>
-        <Info color={colors.textPrimary} size={22} />
-      </TouchableOpacity>
-    </View>
+            <View style={styles.encryptionBadge}>
+              <Shield size={10} color={colors.accent} />
+              <Text
+                style={[
+                  styles.encryptionText,
+                  { color: colors.accent },
+                ]}
+              >
+                {" "}End-to-end Encrypted
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Info */}
+        <TouchableOpacity
+          style={styles.sideButton}
+          onPress={handleOpenGroupInfo}
+          activeOpacity={0.7}
+        >
+          <Info color={colors.textPrimary} size={22} />
+        </TouchableOpacity>
+      </View>
+
+      {/* WhatsApp-Style Avatar Preview */}
+      <Modal visible={showAvatar} transparent animationType="fade">
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setShowAvatar(false)}
+        >
+          <Avatar uri={avatarUri} size={240} />
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -79,19 +131,47 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  headerBtn: { padding: 5 },
+
+  sideButton: {
+    padding: 8,
+  },
+
   centerArea: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 4,
+    paddingHorizontal: 6,
   },
-  headerInfo: { flex: 1, marginLeft: 10 },
-  headerName: { fontSize: 16, fontWeight: "700" },
-  encryptionBadge: { flexDirection: "row", alignItems: "center", marginTop: 2 },
-  encryptionText: { fontSize: 10, fontWeight: "600" },
+
+  headerInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  headerName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  encryptionBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+  },
+
+  encryptionText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

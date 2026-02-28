@@ -3,21 +3,25 @@
  * Preview of first 5 members with online indicator and admin crown.
  */
 
+import { Avatar } from "@/components/ui/Avatar";
+import { SectionCard, SectionHeader } from "@/components/ui/groupInfoUi";
+import { ThemeColors } from "@/theme/color";
+import { useTheme } from "@/theme/ThemeProvider";
+import type { MemberSummary } from "@/types/group";
+import { Crown, Users } from "lucide-react-native";
 import React from "react";
 import { Alert, Dimensions, StyleSheet, Text, View } from "react-native";
-import { Avatar } from "@/components/ui/Avatar";
-import { Crown, Users } from "lucide-react-native";
-import { SectionCard, SectionHeader } from "@/components/ui/groupInfoUi";
-import type { Member, ThemeColors } from "@/types/group";
 
 const SCREEN_W = Dimensions.get("window").width;
 
 interface MembersSectionProps {
-    members: Member[];
-    colors: ThemeColors;
+    _id?: string;
+    id?: string;
+    members: MemberSummary[];
 }
 
-export function MembersSection({ members, colors }: MembersSectionProps) {
+export function MembersSection({ members }: MembersSectionProps) {
+    const { colors } = useTheme();
     return (
         <SectionCard colors={colors}>
             <SectionHeader
@@ -29,7 +33,7 @@ export function MembersSection({ members, colors }: MembersSectionProps) {
             />
             <View style={styles.grid}>
                 {members.slice(0, 5).map((m) => (
-                    <MemberChip key={m.id} member={m} colors={colors} />
+                    <MemberChip key={m._id ?? m.id} member={m} colors={colors} />
                 ))}
             </View>
         </SectionCard>
@@ -37,7 +41,7 @@ export function MembersSection({ members, colors }: MembersSectionProps) {
 }
 
 /* ─── MemberChip ─── */
-function MemberChip({ member, colors }: { member: Member; colors: ThemeColors }) {
+function MemberChip({ member, colors }: { member: MemberSummary; colors: ThemeColors }) {
     return (
         <View style={[styles.chip, { width: chipWidth() }]}>
             <View style={styles.avatarWrap}>

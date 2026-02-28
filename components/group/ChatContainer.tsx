@@ -23,6 +23,7 @@ type ChatContainerProps = {
   memberCount?: number;
   onBack: () => void;
   tournamentId?: string;
+  groupId?: string;
 };
 
 export default function ChatContainer({
@@ -32,6 +33,7 @@ export default function ChatContainer({
   memberCount,
   onBack,
   tournamentId,
+  groupId,
 }: ChatContainerProps) {
   const { user, isRestoring } = useContext(UserContext);
   const { colors } = useTheme();
@@ -60,6 +62,7 @@ export default function ChatContainer({
         avatarUri={avatarUri}
         memberCount={memberCount}
         onBack={onBack}
+        groupId={groupId ?? chatRoomId}
       />
 
       <KeyboardAvoidingView

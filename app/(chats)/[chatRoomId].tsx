@@ -6,11 +6,12 @@ type Params = {
   chatRoomId?: string;
   name?: string;
   avatar?: string;
+  groupId?: string;
 };
 
 export default function GroupChatScreen() {
   const router = useRouter();
-  const { chatRoomId, name, avatar } = useLocalSearchParams<Params>();
+  const { chatRoomId, name, avatar, groupId } = useLocalSearchParams<Params>();
 
   if (!chatRoomId || !name) {
     return <Text>Invalid chat</Text>;
@@ -24,6 +25,7 @@ export default function GroupChatScreen() {
       name={name}
       avatarUri={avatarUri}
       onBack={router.back}
+      groupId={groupId}
     />
   );
 }

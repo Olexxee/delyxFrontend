@@ -1,8 +1,8 @@
 import { AppButton } from "@/components/ui/AppButton";
 import { AppInput } from "@/components/ui/AppInput";
-import { Colors } from "@/theme/color";
+import { useTheme } from "@/theme/ThemeProvider";
 import { BlurView } from "expo-blur";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -18,7 +18,6 @@ interface AuthFormProps {
   switchScreen: () => void;
 }
 
-
 export function AuthForm({
   type,
   loading,
@@ -32,22 +31,28 @@ export function AuthForm({
   onSubmit,
   switchScreen,
 }: AuthFormProps) {
+  const { colors, mode } = useTheme();
+  const styles = createStyles(colors);
+
   return (
-    <BlurView intensity={25} tint="dark" style={styles.glassContainer}>
+    <BlurView
+      intensity={25}
+      tint={mode === "dark" ? "dark" : "light"}
+      style={styles.glassContainer}
+    >
       <View style={styles.innerContainer}>
-        <Text style={[styles.title, { color: Colors.textPrimary }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
           {type === "login" ? "Welcome Back" : "Create Account"}
         </Text>
-        <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>
+
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {type === "login"
             ? "Sign in to your account"
             : "Join Delyx today"}
         </Text>
 
         {error ? (
-          <Text style={{ color: "red", marginBottom: 16, textAlign: "center" }}>
-            {error}
-          </Text>
+          <Text style={styles.errorText}>{error}</Text>
         ) : null}
 
         {type === "register" && username !== undefined && setUsername && (
@@ -69,6 +74,7 @@ export function AuthForm({
           autoCapitalize="none"
           style={{ marginBottom: 16 }}
         />
+
         <AppInput
           placeholder="Password"
           value={password}
@@ -86,11 +92,11 @@ export function AuthForm({
         />
 
         <TouchableOpacity onPress={switchScreen} style={{ marginTop: 20 }}>
-          <Text style={{ color: Colors.textSecondary, textAlign: "center" }}>
+          <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
             {type === "login"
               ? "Don't have an account? "
               : "Already have an account? "}
-            <Text style={{ color: Colors.accent, fontWeight: "700" }}>
+            <Text style={{ color: colors.accent, fontWeight: "700" }}>
               {type === "login" ? "Register" : "Login"}
             </Text>
           </Text>
@@ -100,20 +106,38 @@ export function AuthForm({
   );
 }
 
-const styles = StyleSheet.create({
-  glassContainer: {
-    width: "90%",
-    maxWidth: 420,
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: Colors.surfaceLight + "CC",
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    minHeight: 400,
-    justifyContent: "center",
-    paddingVertical: 20,
-  },
-  innerContainer: { padding: 24, justifyContent: "center", flexGrow: 1 },
-  title: { fontSize: 28, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 16, marginBottom: 24 },
-});
+/* ✅ Dynamic style factory */
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    glassContainer: {
+      width: "90%",
+      maxWidth: 420,
+      borderRadius: 24,
+      overflow: "hidden",
+      backgroundColor: colors.surfaceLight + "CC",
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      minHeight: 400,
+      justifyContent: "center",
+      paddingVertical: 20,
+    },
+    innerContainer: {
+      padding: 24,
+      justifyContent: "center",
+      flexGrow: 1,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      marginBottom: 24,
+    },
+    errorText: {
+      color: colors.error,
+      marginBottom: 16,
+      textAlign: "center",
+    },
+  });

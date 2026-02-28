@@ -1,19 +1,19 @@
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAvoidingView, ScrollView, View, StatusBar, StyleSheet, Animated, Dimensions } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useState, useRef, useContext } from "react";
 import { UserContext } from "@/authContext/UserContext";
-import { FloatingShapes } from "@/components/ui/FloatingShapes";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useAuth } from "@/components/auth/useAuth";
-import { Colors } from "@/theme/color";
-import { User } from "lucide-react-native";
+import { FloatingShapes } from "@/components/ui/FloatingShapes";
+import { useTheme } from "@/theme/ThemeProvider";
+import { LinearGradient } from "expo-linear-gradient";
+import { useContext, useRef, useState } from "react";
+import { Animated, Dimensions, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function AuthContainer() {
+  const { colors, mode } = useTheme();
   const { setUser } = useContext(UserContext);
   const [screen, setScreen] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -39,10 +39,10 @@ export default function AuthContainer() {
   const translateRegister = animValue.interpolate({ inputRange: [0, 1], outputRange: [SCREEN_WIDTH, 0] });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle="light-content" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <LinearGradient colors={[Colors.textPrimary, Colors.surface]} style={styles.gradient}>
+        <LinearGradient colors={[colors.textPrimary, colors.surface]} style={styles.gradient}>
           <FloatingShapes />
 
           <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">

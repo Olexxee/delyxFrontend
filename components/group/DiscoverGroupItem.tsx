@@ -1,15 +1,15 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Avatar } from "@/components/ui/Avatar";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { Group } from "@/types/group";
+import type { GroupOverview } from "@/types/group";
+import React from "react";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
-    group: Group;
-    onPressInfo: (group: Group) => void;
+    group: GroupOverview;
+    onPressInfo: (group: GroupOverview) => void;
 };
 
-export const DiscoverGroupItem: React.FC<Props> = ({ group, onPressInfo }) => {
+export const DiscoverGroupItem = React.memo(({ group, onPressInfo }: Props) => {
     const { colors } = useTheme();
 
     // Ensure avatar is a string URL
@@ -31,8 +31,8 @@ export const DiscoverGroupItem: React.FC<Props> = ({ group, onPressInfo }) => {
                     {group.name}
                 </Text>
                 <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {group.memberCount !== undefined
-                        ? `${group.memberCount} members`
+                    {group.totalMembers !== undefined
+                        ? `${group.totalMembers} members`
                         : "No description"}
                 </Text>
             </View>
@@ -42,7 +42,7 @@ export const DiscoverGroupItem: React.FC<Props> = ({ group, onPressInfo }) => {
             </View>
         </TouchableOpacity>
     );
-};
+});
 
 const styles = StyleSheet.create({
     cardContainer: {

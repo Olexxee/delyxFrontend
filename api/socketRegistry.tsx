@@ -40,7 +40,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         // Disconnect previous socket if exists
         socketRef.current?.disconnect();
 
-        const newSocket = io("https://impatient-motmot.outray.app", {
+        const newSocket = io("https://sad-meadow.outray.app", {
             auth: { token },
             transports: ["polling", "websocket"],
             autoConnect: true,

@@ -1,6 +1,7 @@
 import { ActiveTournamentBanner } from "@/components/tournament/Activetournamentbanner";
 import { useTheme } from "@/theme/ThemeProvider";
 import type { GroupOverview } from "@/types/group";
+import { ChevronLeft } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,12 +10,11 @@ import { AdminControls, DangerZone } from "./Admincontrols";
 import { GroupHero } from "./Grouphero";
 import { LeaveGroupButton } from "./Leavegroupbutton";
 import { MembersSection } from "./Memberssection";
-import { ChevronLeft } from "lucide-react-native";
 
 type Props = {
     group: GroupOverview;
-    onBack?: () => void; // optional
-    showHeader?: boolean; // optional control
+    onBack?: () => void;
+    showHeader?: boolean;
 };
 
 export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
@@ -26,12 +26,12 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
     const visibleTournaments = useMemo(
         () =>
             isAdmin
-                ? group.tournamentsPreview
-                : group.tournamentsPreview.filter((t) => t.status !== "active"),
+                ? (group.tournamentsPreview ?? [])
+                : (group.tournamentsPreview ?? []).filter((t) => t.status !== "active"),
         [group.tournamentsPreview, isAdmin]
     );
 
-    const activeTournament = group.tournamentsPreview.find(
+    const activeTournament = (group.tournamentsPreview ?? []).find(
         (t) => t.status === "active"
     );
 
@@ -39,7 +39,7 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
         <SafeAreaView style={[styles.screen, { backgroundColor: colors.background ?? colors.surface }]}>
 
             {showHeader && (
-                <View style={[styles.navBar, { borderBottomColor: colors.border }]}>
+                <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
                     {onBack ? (
                         <TouchableOpacity onPress={onBack} style={styles.navBtn}>
                             <ChevronLeft size={26} color={colors.textPrimary} />
@@ -54,7 +54,10 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
                 </View>
             )}
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+            >
                 <GroupHero
                     group={group}
                     isAdmin={isAdmin}
@@ -73,18 +76,18 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
                     onViewAll={() => setTournamentsModalVisible(true)}
                 />
 
-                <MembersSection members={group.membersPreview} colors={colors} />
+                <MembersSection members={group.membersPreview ?? []} />
 
                 {isAdmin && (
                     <>
-                        <AdminControls joinRequestCount={group.pendingJoinRequestCount} colors={colors} />
-                        <DangerZone colors={colors} />
+                        <AdminControls joinRequestCount={group.pendingJoinRequestCount} />
+                        <DangerZone />
                     </>
                 )}
 
                 {!isAdmin && <LeaveGroupButton />}
 
-                <View style={{ height: 40 }} />
+                <View style={styles.bottomSpacer} />
             </ScrollView>
 
             <TournamentsModal
@@ -99,8 +102,12 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1 },
-    scroll: { paddingBottom: 32 },
+    screen: {
+        flex: 1,
+    },
+    scroll: {
+        paddingBottom: 32,
+    },
     navBar: {
         flexDirection: "row",
         alignItems: "center",
@@ -109,6 +116,15 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    navBtn: { width: 40, alignItems: "flex-start" },
-    navTitle: { fontSize: 16, fontWeight: "700" },
+    navBtn: {
+        width: 40,
+        alignItems: "flex-start",
+    },
+    navTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+    },
+    bottomSpacer: {
+        height: 40,
+    },
 });

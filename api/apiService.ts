@@ -14,9 +14,13 @@ export const registerUser = (payload: RegisterPayload) =>
 export const getFeed = () => api.get("/feed").then((res) => res.data);
 
 /* ================= GROUPS ================= */
-
 export const getMyGroups = () =>
-  api.get("/groups/my-groups").then((res) => res.data.data);
+  api.get("/groups/my-groups").then((res) =>
+    res.data.data.map((raw: any) => ({
+      ...raw,
+      id: raw.id ?? raw._id,
+    })),
+  );
 
 export const createGroup = (
   payload: FormData | { name: string; privacy: string; avatar: string | null },
