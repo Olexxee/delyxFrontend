@@ -5,6 +5,7 @@ export interface User {
   avatar?: string;
   role: "user" | "admin";
   verified: boolean;
+  deviceTokens?: string[];
 }
 
 export interface AuthResponse {

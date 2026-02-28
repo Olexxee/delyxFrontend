@@ -1,37 +1,36 @@
 {
   "expo": {
-    "name": "delyx-mobile",
-    "slug": "delyx-mobile",
+    "name": "delyxgaming",
+    "slug": "delyxgaming",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "delyxmobile",
+    "icon": "./assets/images/icon.png",
+    "scheme": "delyxgaming",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
-    "expo": {
-      "scheme": "delyx",
-      "experiments": {
-        "typedRoutes": true
-      }
-    },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.delyxmobile"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -39,19 +38,11 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      "expo-font"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "57482dc1-3ca4-4829-b36a-8f30a2f5130d"
-      }
-    },
-    "owner": "delyx"
+    }
   }
 }

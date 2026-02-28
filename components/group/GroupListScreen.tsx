@@ -47,6 +47,7 @@ export default function GroupListScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  const [, setTick] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
