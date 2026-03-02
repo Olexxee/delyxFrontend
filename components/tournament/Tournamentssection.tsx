@@ -1,25 +1,27 @@
+import { SectionCard, SectionHeader } from "@/components/ui/groupInfoUi";
+import { useTheme } from "@/theme/ThemeProvider";
+import type { TournamentDetails } from "@/types/group";
+import { PlusCircle, Trophy } from "lucide-react-native";
 import React from "react";
 import { Alert, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PlusCircle, Trophy } from "lucide-react-native";
-import { SectionCard, SectionHeader } from "@/components/ui/groupInfoUi";
 import { TournamentRow } from "./Tournamentrow";
-import type { Tournament, ThemeColors } from "@/types/group";
 
 /* ─── Section (preview) ─── */
 interface TournamentsSectionProps {
-    tournaments: Tournament[];
+    tournaments: TournamentDetails[];
     isAdmin: boolean;
-    colors: ThemeColors;
     onViewAll: () => void;
 }
 
 export function TournamentsSection({
     tournaments,
     isAdmin,
-    colors,
     onViewAll,
 }: TournamentsSectionProps) {
+
+    const { colors } = useTheme()
+
     return (
         <SectionCard colors={colors}>
             <SectionHeader
@@ -52,9 +54,9 @@ export function TournamentsSection({
 /* ─── Modal (full list) ─── */
 interface TournamentsModalProps {
     visible: boolean;
-    tournaments: Tournament[];
+    tournaments: TournamentDetails[];
     isAdmin: boolean;
-    colors: ThemeColors;
+    colors: ReturnType<typeof useTheme>["colors"];
     onClose: () => void;
 }
 

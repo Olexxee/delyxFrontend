@@ -1,4 +1,4 @@
-import type { AppNotification } from "@/hooks/Usenotifications";
+import type { AppNotification } from "@/hooks/useNotifications";
 import { useTheme } from "@/theme/ThemeProvider";
 import { convertToHumanReadableTime } from "@/utils/convertToHumanReadableTime";
 import { X } from "lucide-react-native";

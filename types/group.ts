@@ -20,11 +20,16 @@ export type GroupOverview = {
   totalMembers: number;
   chatRoomId?: string;
   myRole: Role;
+  activeTournaments: number;
+  avgPoints?: number;
+  topGamers?: {
+    username: string;
+    points: number;
+    rank?: "bronze" | "silver" | "gold" | "elite";
+  }[];
 
-  // Admin-only (backend decides visibility)
   pendingJoinRequestCount?: number;
 
-  // Lightweight previews
   activeTournament?: TournamentSummary;
   tournamentsPreview: TournamentSummary[];
   membersPreview: MemberSummary[];

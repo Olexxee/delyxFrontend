@@ -74,3 +74,8 @@ export function useGroupInfo(groupId?: string) {
     enabled: !!groupId,
   });
 }
+
+export const joinGroup = async (groupId: string) => {
+  const { data } = await api.post(`/groups/${groupId}/join-request`);
+  return data;
+};

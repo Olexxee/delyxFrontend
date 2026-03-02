@@ -1,8 +1,3 @@
-/**
- * group-info/MembersSection.tsx
- * Preview of first 5 members with online indicator and admin crown.
- */
-
 import { Avatar } from "@/components/ui/Avatar";
 import { SectionCard, SectionHeader } from "@/components/ui/groupInfoUi";
 import { ThemeColors } from "@/theme/color";

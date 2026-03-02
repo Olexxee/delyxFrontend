@@ -72,7 +72,6 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
                 <TournamentsSection
                     tournaments={visibleTournaments}
                     isAdmin={isAdmin}
-                    colors={colors}
                     onViewAll={() => setTournamentsModalVisible(true)}
                 />
 

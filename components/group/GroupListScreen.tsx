@@ -1,6 +1,7 @@
 import { useSearchGroups } from "@/api/groups.api";
 import { useSocket } from "@/api/socketRegistry";
 import CreateGroupModal from "@/components/group/CreateGroupModal";
+import { GroupInfoModal } from "@/components/group/GroupInfoModal";
 import { CreateGroupFAB } from "@/components/ui/CreateGroupFAB";
 import { useCreateGroup } from "@/hooks/mutations/useCreateGroup";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -47,12 +48,12 @@ export default function GroupListScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
-  const [, setTick] = useState(0);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<GroupOverview | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const isSearching = debouncedSearch.trim().length > 0;
+  const [isJoining, setIsJoining] = useState(false);
 
   /* ================= QUERIES & MUTATIONS ================= */
   const {
@@ -76,6 +77,35 @@ export default function GroupListScreen() {
   } = useSearchGroups(debouncedSearch);
 
   const { mutate: performCreateGroup, isPending: isCreating } = useCreateGroup();
+
+  /* ================= HANDLERS (defined early to avoid forward references) ================= */
+  const handleGroupPress = useCallback(
+    (group: GroupOverview) => {
+      if (!group.chatRoomId || !group.name) {
+        Alert.alert("Invalid group", "This group cannot be opened at the moment.");
+        return;
+      }
+
+      const rawAvatar = group.avatar as any;
+      const avatarUrl: string =
+        typeof rawAvatar === "string"
+          ? rawAvatar
+          : typeof rawAvatar?.url === "string"
+            ? rawAvatar.url
+            : "";
+
+      router.push({
+        pathname: "/(chats)/[chatRoomId]",
+        params: {
+          chatRoomId: group.chatRoomId,
+          name: group.name,
+          avatar: avatarUrl,
+          groupId: group.id ?? "",
+        },
+      });
+    },
+    [router]
+  );
 
   /* ================= REFETCH ON FOCUS ================= */
   useFocusEffect(
@@ -119,33 +149,17 @@ export default function GroupListScreen() {
     };
   }, [socket, queryClient]);
 
-  /* ================= HANDLERS ================= */
-  const handleGroupPress = useCallback(
+  // Direct join from the card (no modal) — navigates immediately
+  const handleJoinGroup = useCallback(
     (group: GroupOverview) => {
-      if (!group.chatRoomId || !group.name) {
-        Alert.alert("Invalid group", "This group cannot be opened at the moment.");
-        return;
-      }
-
-      const rawAvatar = group.avatar as any;
-      const avatarUrl: string =
-        typeof rawAvatar === "string"
-          ? rawAvatar
-          : typeof rawAvatar?.url === "string"
-            ? rawAvatar.url
-            : "";
-
-      router.push({
-        pathname: "/(chats)/[chatRoomId]",
-        params: {
-          chatRoomId: group.chatRoomId,
-          name: group.name,
-          avatar: avatarUrl,
-          groupId: group.id ?? "",
-        },
+      queryClient.setQueryData<GroupOverview[]>(["myGroups"], (prev = []) => {
+        if (prev.find((g) => g.id === group.id)) return prev;
+        return [{ ...group, lastMessageAt: new Date().toISOString() }, ...prev];
       });
+      refetchMyGroups();
+      handleGroupPress(group);
     },
-    [router]
+    [queryClient, refetchMyGroups, handleGroupPress]
   );
 
   const handleCreateConfirm = useCallback(
@@ -169,6 +183,31 @@ export default function GroupListScreen() {
       });
     },
     [performCreateGroup, refetchMyGroups, queryClient]
+  );
+
+  const handleViewInfo = useCallback(
+    (group: GroupOverview) => {
+      setSelectedGroup(null);
+      router.push({
+        pathname: "/(groups)/group-info",
+        params: { groupId: group.id },
+      });
+    },
+    [router]
+  );
+
+  const handlePressInfo = useCallback(
+    (group: GroupOverview) => {
+      setSelectedGroup(group);
+    },
+    []
+  );
+
+  const handleModalJoin = useCallback(
+    (group: GroupOverview) => {
+      handleJoinGroup(group);
+    },
+    [handleJoinGroup]
   );
 
   const handleEndReached = useCallback(() => {
@@ -204,9 +243,15 @@ export default function GroupListScreen() {
         return <GroupListItem group={item} onPress={handleGroupPress} />;
       }
 
-      return <DiscoverGroupItem group={item} onPressInfo={() => undefined} />;
+      return (
+        <DiscoverGroupItem
+          group={item}
+          onPressInfo={handlePressInfo}   // opens modal
+          onJoin={handleJoinGroup}        // joins directly from card
+        />
+      );
     },
-    [handleGroupPress]
+    [handleGroupPress, handleJoinGroup]
   );
 
   const renderSectionHeader = useCallback(
@@ -269,6 +314,14 @@ export default function GroupListScreen() {
         isSubmitting={isCreating}
         onClose={() => setIsModalVisible(false)}
         onConfirm={handleCreateConfirm}
+      />
+      <GroupInfoModal
+        visible={!!selectedGroup}
+        group={selectedGroup}
+        onClose={() => setSelectedGroup(null)}
+        onJoin={handleModalJoin}
+        onViewInfo={handleViewInfo}
+        isJoining={isJoining}
       />
     </SafeAreaView>
   );
