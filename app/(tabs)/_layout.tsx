@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useContext } from "react";
-import { Animated } from "react-native";
-import { Tabs, Redirect } from "expo-router";
-import { Home, MessageCircle, Trophy, User, Users } from "lucide-react-native";
-import { useTheme } from "@/theme/ThemeProvider";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UserContext } from "@/authContext/UserContext";
+import { useTheme } from "@/theme/ThemeProvider";
+import { Redirect, Tabs } from "expo-router";
+import { Home, MessageCircle, Trophy, Users } from "lucide-react-native";
+import React, { useContext, useEffect, useRef } from "react";
+import { Animated } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type AnimatedIconProps = {
   Icon: any;
@@ -85,7 +85,7 @@ export default function TabsLayout() {
                   inactiveColor={colors.textSecondary}
                 />
               );
-            case "tournament":
+            case "tournaments":
               return (
                 <AnimatedIcon
                   Icon={Trophy}
@@ -111,7 +111,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="feed" />
       <Tabs.Screen name="group" />
-      <Tabs.Screen name="tournament" />
+      <Tabs.Screen name="tournaments" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );
