@@ -13,9 +13,10 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
+  onBack?: () => void;
 }
 
-export function AppScreenHeader({ title, subtitle }: ScreenHeaderProps) {
+export function AppScreenHeader({ title, subtitle, onBack }: ScreenHeaderProps) {
   const { colors } = useTheme();
   const { user, setUser } = useContext(UserContext);
 

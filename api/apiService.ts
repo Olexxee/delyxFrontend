@@ -1,4 +1,5 @@
 import type { AuthResponse, LoginPayload, RegisterPayload } from "@/types/auth";
+import type { TournamentListResponse } from "@/types/tournament";
 import api from "./api";
 
 /* ================= AUTH ================= */
@@ -47,6 +48,9 @@ export const getGroupTournaments = (groupId: string) =>
 
 export const getTournamentById = (tournamentId: string) =>
   api.get(`/tournaments/${tournamentId}`).then((res) => res.data);
+
+export const fetchAllTournaments = (): Promise<TournamentListResponse> =>
+  api.get("/tournaments/").then((res) => res.data);
 
 export const createTournament = (payload: {
   name: string;

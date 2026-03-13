@@ -52,10 +52,7 @@ export function GroupInfoView({ group, onBack, showHeader = true }: Props) {
     // ── Navigation helpers ────────────────────────────────────────────────────
 
     function goToTournamentList() {
-        router.push({
-            pathname: "/(tabs)/tournaments",
-            params: { groupId: group._id ?? group.id, groupName: group.name },
-        });
+        router.push({ pathname: "/tournaments" });
     }
 
     function goToTournamentDetail(t: Tournament) {

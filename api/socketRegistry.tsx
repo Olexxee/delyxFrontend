@@ -10,7 +10,7 @@ import React, {
 import { io, Socket } from "socket.io-client";
 
 export interface SocketContextValue {
-    socket: Socket | null;        // stable reference
+    socket: Socket | null;
     isConnected: boolean;
     refreshSocket: () => Promise<void>;
 }
@@ -24,10 +24,8 @@ export interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-    // Ref to store the actual socket instance
     const socketRef = useRef<Socket | null>(null);
 
-    // Only track connection status in state
     const [isConnected, setIsConnected] = useState(false);
 
     /* -----------------------------
@@ -37,20 +35,17 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
         if (!token) return;
 
-        // Disconnect previous socket if exists
         socketRef.current?.disconnect();
 
-        const newSocket = io("https://untrustworthy-force.outray.app", {
+        const newSocket = io("https://cautious-taxi.outray.app", {
             auth: { token },
             transports: ["polling", "websocket"],
             autoConnect: true,
         });
 
-        // Track connection state
         newSocket.on("connect", () => setIsConnected(true));
         newSocket.on("disconnect", () => setIsConnected(false));
 
-        // Assign to ref — ref never changes identity
         socketRef.current = newSocket;
     }, []);
 
@@ -70,7 +65,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     ----------------------------- */
     const contextValue = React.useMemo<SocketContextValue>(
         () => ({
-            socket: socketRef.current, // stable reference for effects
+            socket: socketRef.current,
             isConnected,
             refreshSocket: initSocket,
         }),

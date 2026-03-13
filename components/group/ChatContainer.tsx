@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 import { UserContext } from "@/authContext/UserContext";
 import ChatHeader from "@/components/group/ChatHeader";
@@ -14,6 +15,8 @@ import ChatInput from "@/components/group/ChatInput";
 import MessageList from "@/components/group/MessageList";
 import TournamentCard from "@/components/tournament/TournamentCard";
 import { useChatEngine } from "@/hooks/useChatEngine";
+import { useTournamentDetail } from "@/hooks/useTournaments";
+import { toTournament } from "@/types/tournament";
 import { useTheme } from "@/theme/ThemeProvider";
 
 type ChatContainerProps = {
@@ -37,6 +40,7 @@ export default function ChatContainer({
 }: ChatContainerProps) {
   const { user, isRestoring } = useContext(UserContext);
   const { colors } = useTheme();
+  const router = useRouter();
 
   const userId = (user as any)?._id ?? (user as any)?.id ?? "";
 
@@ -45,12 +49,24 @@ export default function ChatContainer({
     userId,
   );
 
+  // Fetch pinned tournament if a tournamentId is linked to this chat room
+  const { data: pinnedTournamentRaw } = useTournamentDetail(tournamentId ?? "");
+  const pinnedTournament = pinnedTournamentRaw ?? null;
+
   if (isRestoring || !user) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+
+  function handleTournamentPress() {
+    if (!tournamentId) return;
+    router.push({
+      pathname: "/(tabs)/tournaments/[tournamentId]",
+      params: { tournamentId },
+    });
   }
 
   return (
@@ -71,12 +87,10 @@ export default function ChatContainer({
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         {/* Pinned tournament card — shown when a tournament is linked */}
-        {tournamentId && (
+        {pinnedTournament && (
           <TournamentCard
-            tournamentId={tournamentId}
-            onPress={() => {
-              // TODO: navigate to tournament detail
-            }}
+            tournament={pinnedTournament}
+            onPress={handleTournamentPress}
           />
         )}
 
