@@ -1,43 +1,56 @@
+import { useTheme } from "@/theme/ThemeProvider";
+import type { TournamentStatus } from "@/types/tournament";
+import { STATUS_META } from "@/types/tournament";
 import React from "react";
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface Props {
-    status: "registration" | "ongoing" | "completed";
+    status: TournamentStatus;
+    showDot?: boolean;
 }
 
-export default function TournamentStatusBadge({ status }: Props) {
-    const statusMap = {
-        registration: {
-            label: "Registration Open",
-            color: "#16a34a",
-            bg: "#dcfce7",
-        },
-        ongoing: {
-            label: "Ongoing",
-            color: "#2563eb",
-            bg: "#dbeafe",
-        },
-        completed: {
-            label: "Completed",
-            color: "#6b7280",
-            bg: "#f3f4f6",
-        },
-    };
-
-    const s = statusMap[status];
+export default function TournamentStatusBadge({ status, showDot = true }: Props) {
+    const { colors } = useTheme();
+    const meta = STATUS_META[status];
+    const isOngoing = status === "ongoing";
 
     return (
         <View
-            style={{
-                backgroundColor: s.bg,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 6,
-            }}
+            style={[
+                styles.badge,
+                {
+                    borderColor: meta.color,
+                    backgroundColor: meta.color + "18",
+                },
+            ]}
         >
-            <Text style={{ color: s.color, fontWeight: "600", fontSize: 12 }}>
-                {s.label}
+            {isOngoing && showDot && (
+                <View style={[styles.dot, { backgroundColor: meta.color }]} />
+            )}
+            <Text style={[styles.label, { color: meta.color }]}>
+                {meta.label}
             </Text>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    badge: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        borderWidth: 1,
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    label: {
+        fontSize: 11,
+        fontWeight: "700",
+    },
+});

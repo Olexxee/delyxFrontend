@@ -1,7 +1,20 @@
-// ─── Status ────────────────────────────────────────────────────────────────
+// ─── Status ───────────────────────────────────────────────────────────────────
+
 export type TournamentStatus = "registration" | "ongoing" | "completed";
 
-// ─── Pagination ────────────────────────────────────────────────────────────
+// ─── Status meta ──────────────────────────────────────────────────────────────
+
+export const STATUS_META: Record<
+    TournamentStatus,
+    { label: string; color: string; bg: string }
+> = {
+    registration: { label: "OPEN", color: "#2563EB", bg: "#2563EB18" },
+    ongoing: { label: "LIVE", color: "#16a34a", bg: "#16a34a18" },
+    completed: { label: "ENDED", color: "#6b7280", bg: "#6b728018" },
+};
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
 export interface PaginationMeta {
     total: number;
     totalPages: number;
@@ -10,7 +23,8 @@ export interface PaginationMeta {
     hasNextPage: boolean;
 }
 
-// ─── API response wrappers ─────────────────────────────────────────────────
+// ─── API response wrappers ────────────────────────────────────────────────────
+
 export interface TournamentListResponse {
     success: boolean;
     tournaments: ApiTournament[];
@@ -22,7 +36,8 @@ export interface TournamentResponse {
     tournament: ApiTournament;
 }
 
-// ─── Raw API shape ─────────────────────────────────────────────────────────
+// ─── Raw API shapes ───────────────────────────────────────────────────────────
+
 export interface ApiParticipant {
     userId: string;
     username: string;
@@ -63,7 +78,8 @@ export interface ApiTournament {
     updatedAt: string;
 }
 
-// ─── Lightweight summary — embedded in GroupOverview.tournamentsPreview ────
+// ─── Lightweight summary — embedded in GroupOverview.tournamentsPreview ───────
+
 export interface TournamentSummary {
     id: string;
     name: string;
@@ -73,7 +89,8 @@ export interface TournamentSummary {
     startDate: string;
 }
 
-// ─── Full UI-normalised shape ──────────────────────────────────────────────
+// ─── Full UI-normalised shape ─────────────────────────────────────────────────
+
 export interface Tournament {
     id: string;
     name: string;
@@ -82,10 +99,13 @@ export interface Tournament {
     description?: string;
     status: TournamentStatus;
     maxParticipants: number;
+    // Both fields present — API returns participantCount, some components
+    // use totalParticipantsCount. Read both defensively at render time.
     participantCount: number;
+    totalParticipantsCount: number;
     participants: ApiParticipant[];
     isRegistrationOpen: boolean;
-    // ISO strings — format at render time
+    // ISO strings — always format with fmt() at render time, never display raw
     startDate: string;
     endDate: string;
     registrationDeadline: string;
@@ -103,9 +123,10 @@ export interface Tournament {
     prizePool?: string;
 }
 
-// ─── Adapters ──────────────────────────────────────────────────────────────
-
+// ─── Adapters ─────────────────────────────────────────────────────────────────
 export function toTournament(a: ApiTournament): Tournament {
+    const participantCount = a.participants?.length ?? 0;
+
     return {
         id: a._id,
         name: a.name,
@@ -114,7 +135,8 @@ export function toTournament(a: ApiTournament): Tournament {
         description: a.description,
         status: a.status,
         maxParticipants: a.maxParticipants,
-        participantCount: a.participants?.length ?? 0,
+        participantCount,
+        totalParticipantsCount: participantCount,
         participants: a.participants ?? [],
         isRegistrationOpen: a.isRegistrationOpen,
         startDate: a.startDate,
@@ -139,6 +161,7 @@ export function summaryToTournament(s: TournamentSummary, groupId: string): Tour
         status: s.status,
         maxParticipants: s.maxParticipants,
         participantCount: s.participantCount,
+        totalParticipantsCount: s.participantCount,
         participants: [],
         isRegistrationOpen: s.status === "registration",
         startDate: s.startDate,
@@ -158,13 +181,3 @@ export function summaryToTournament(s: TournamentSummary, groupId: string): Tour
         userContext: { isRegistered: false, role: null },
     };
 }
-
-// ─── Status meta ───────────────────────────────────────────────────────────
-export const STATUS_META: Record<
-    TournamentStatus,
-    { label: string; color: string; bg: string }
-> = {
-    registration: { label: "OPEN", color: "#2563EB", bg: "#2563EB18" },
-    ongoing: { label: "LIVE", color: "#16a34a", bg: "#16a34a18" },
-    completed: { label: "ENDED", color: "#6b7280", bg: "#6b728018" },
-};

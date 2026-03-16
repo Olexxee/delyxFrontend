@@ -29,7 +29,7 @@ export default function TournamentsScreen() {
 
     function handleSelect(tournament: Tournament) {
         router.push({
-            pathname: "./[tournamentId]",
+            pathname: "/tournaments/[tournamentId]",
             params: { tournamentId: tournament.id },
         });
     }

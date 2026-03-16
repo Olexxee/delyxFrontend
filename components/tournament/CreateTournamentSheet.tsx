@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Props ────────────────────────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
     visible: boolean;
@@ -27,7 +27,7 @@ interface Props {
     onCreated: (tournament: ApiTournament) => void;
 }
 
-// ─── Form ─────────────────────────────────────────────────────────────────
+// ─── Form ─────────────────────────────────────────────────────────────────────
 
 interface FormState {
     name: string;
@@ -51,7 +51,7 @@ const INITIAL: FormState = {
     registrationDeadline: "",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseDate(input: string): string | null {
     const [dd, mm, yyyy] = input.split("/");
@@ -68,26 +68,41 @@ function validate(f: FormState): string | null {
     if (!start) return "Start date invalid — use DD/MM/YYYY.";
     if (!end) return "End date invalid — use DD/MM/YYYY.";
     if (new Date(deadline) <= new Date()) return "Registration deadline must be in the future.";
-    if (new Date(start) <= new Date(deadline)) return "Start date must be after registration deadline.";
+    if (new Date(start) <= new Date(deadline))
+        return "Start date must be after registration deadline.";
     if (new Date(end) <= new Date(start)) return "End date must be after start date.";
     const max = parseInt(f.maxParticipants, 10);
     if (isNaN(max) || max < 2) return "Max participants must be at least 2.";
     return null;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+    label,
+    labelColor,
+    children,
+}: {
+    label: string;
+    labelColor: string;
+    children: React.ReactNode;
+}) {
     return (
         <View style={s.field}>
-            <Text style={s.label}>{label}</Text>
+            <Text style={[s.label, { color: labelColor }]}>{label}</Text>
             {children}
         </View>
     );
 }
 
 function Seg<T extends string>({
-    options, value, onChange, accent, border, surface, muted,
+    options,
+    value,
+    onChange,
+    accent,
+    border,
+    surface,
+    muted,
 }: {
     options: { label: string; value: T }[];
     value: T;
@@ -108,7 +123,13 @@ function Seg<T extends string>({
                         onPress={() => onChange(o.value)}
                         activeOpacity={0.8}
                     >
-                        <Text style={[s.segText, { color: on ? "#fff" : muted }, on && { fontWeight: "700" }]}>
+                        <Text
+                            style={[
+                                s.segText,
+                                { color: on ? "#fff" : muted },
+                                on && { fontWeight: "700" },
+                            ]}
+                        >
                             {o.label}
                         </Text>
                     </TouchableOpacity>
@@ -118,13 +139,12 @@ function Seg<T extends string>({
     );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: Props) {
     const { colors } = useTheme();
     const [form, setForm] = useState<FormState>(INITIAL);
 
-    // ← Hook replaces the raw fetch + manual loading state
     const { mutate: createTournament, isPending } = useCreateTournament(groupId);
 
     const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -182,7 +202,9 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
             presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
-            <SafeAreaView style={[s.root, { backgroundColor: colors.background ?? colors.surface }]}>
+            <SafeAreaView
+                style={[s.root, { backgroundColor: colors.background ?? colors.surface }]}
+            >
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -202,7 +224,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                     >
-                        <Field label="Tournament Name *">
+                        <Field label="Tournament Name *" labelColor={colors.textSecondary}>
                             <TextInput
                                 style={inp}
                                 placeholder="e.g. Spring Championship 2026"
@@ -212,7 +234,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             />
                         </Field>
 
-                        <Field label="Description (optional)">
+                        <Field label="Description (optional)" labelColor={colors.textSecondary}>
                             <TextInput
                                 style={[inp, s.textarea]}
                                 placeholder="Brief description..."
@@ -224,7 +246,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             />
                         </Field>
 
-                        <Field label="Tournament Type">
+                        <Field label="Tournament Type" labelColor={colors.textSecondary}>
                             <Seg
                                 options={[
                                     { label: "League", value: "league" },
@@ -240,7 +262,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                         </Field>
 
                         {form.type === "league" && (
-                            <Field label="Rounds">
+                            <Field label="Rounds" labelColor={colors.textSecondary}>
                                 <Seg
                                     options={[
                                         { label: "Single Round-Robin", value: "single" },
@@ -256,7 +278,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             </Field>
                         )}
 
-                        <Field label="Max Participants">
+                        <Field label="Max Participants" labelColor={colors.textSecondary}>
                             <TextInput
                                 style={inp}
                                 placeholder="16"
@@ -267,7 +289,10 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             />
                         </Field>
 
-                        <Field label="Registration Deadline * (DD/MM/YYYY)">
+                        <Field
+                            label="Registration Deadline * (DD/MM/YYYY)"
+                            labelColor={colors.textSecondary}
+                        >
                             <TextInput
                                 style={inp}
                                 placeholder="02/04/2026"
@@ -278,7 +303,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             />
                         </Field>
 
-                        <Field label="Start Date * (DD/MM/YYYY)">
+                        <Field label="Start Date * (DD/MM/YYYY)" labelColor={colors.textSecondary}>
                             <TextInput
                                 style={inp}
                                 placeholder="03/04/2026"
@@ -289,7 +314,7 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             />
                         </Field>
 
-                        <Field label="End Date * (DD/MM/YYYY)">
+                        <Field label="End Date * (DD/MM/YYYY)" labelColor={colors.textSecondary}>
                             <TextInput
                                 style={inp}
                                 placeholder="08/05/2026"
@@ -306,10 +331,11 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
                             disabled={isPending}
                             activeOpacity={0.85}
                         >
-                            {isPending
-                                ? <ActivityIndicator color="#fff" />
-                                : <Text style={s.btnText}>Create Tournament</Text>
-                            }
+                            {isPending ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={s.btnText}>Create Tournament</Text>
+                            )}
                         </TouchableOpacity>
                     </ScrollView>
                 </KeyboardAvoidingView>
@@ -320,12 +346,25 @@ export function CreateTournamentSheet({ visible, groupId, onClose, onCreated }: 
 
 const s = StyleSheet.create({
     root: { flex: 1 },
-    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
     title: { fontSize: 17, fontWeight: "700" },
     body: { padding: 20, gap: 18, paddingBottom: 48 },
     field: { gap: 8 },
-    label: { fontSize: 13, fontWeight: "600", color: "#6b7280" },
-    input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+    label: { fontSize: 13, fontWeight: "600" },
+    input: {
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 15,
+    },
     textarea: { height: 80, textAlignVertical: "top", paddingTop: 12 },
     seg: { flexDirection: "row", borderWidth: 1, borderRadius: 12, overflow: "hidden" },
     segItem: { flex: 1, paddingVertical: 11, alignItems: "center" },
