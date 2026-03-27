@@ -1,183 +1,293 @@
-// ─── Status ───────────────────────────────────────────────────────────────────
+export type TournamentStatus =
+  | "registration"
+  | "upcoming"
+  | "ongoing"
+  | "completed";
 
-export type TournamentStatus = "registration" | "ongoing" | "completed";
+export type TournamentType =
+  | "league"
+  | "knockout"
+  | "group_stage"
+  | "hybrid";
 
-// ─── Status meta ──────────────────────────────────────────────────────────────
+export type TournamentTabKey =
+  | "overview"
+  | "participants"
+  | "fixtures"
+  | "standings"
+  | "results";
 
-export const STATUS_META: Record<
-    TournamentStatus,
-    { label: string; color: string; bg: string }
-> = {
-    registration: { label: "OPEN", color: "#2563EB", bg: "#2563EB18" },
-    ongoing: { label: "LIVE", color: "#16a34a", bg: "#16a34a18" },
-    completed: { label: "ENDED", color: "#6b7280", bg: "#6b728018" },
-};
+export type TournamentRoundMode = "single" | "double";
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
+export type FixtureStatus =
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "postponed";
+
+export type TournamentParticipantStatus =
+  | "active"
+  | "pending"
+  | "eliminated"
+  | "withdrawn";
 
 export interface PaginationMeta {
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+}
+
+export interface TournamentParticipant {
+  id: string;
+  username: string;
+  profilePicture: string | null;
+  status: TournamentParticipantStatus;
+  isAdmin?: boolean;
+}
+
+export interface TournamentSettings {
+  pointsForWin: number;
+  pointsForDraw: number;
+  pointsForLoss: number;
+  rounds: TournamentRoundMode;
+}
+
+export interface TournamentViewerContext {
+  isRegistered: boolean;
+  role: string | null;
+  participantId: string | null;
+  canJoin: boolean;
+  canLeave: boolean;
+}
+
+export interface TournamentProgress {
+  totalMatches: number;
+  completedMatches: number;
+  currentMatchday: number;
+  totalMatchdays: number;
+}
+
+export interface TournamentFixture {
+  id: string;
+  matchday: number;
+  status: FixtureStatus;
+  scheduledDate?: string;
+  homeParticipant: TournamentParticipant;
+  awayParticipant: TournamentParticipant;
+  homeScore?: number | null;
+  awayScore?: number | null;
+}
+
+export interface TournamentStandingRow {
+  participantId: string;
+  participantName: string;
+  profilePicture?: string | null;
+  position: number;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  points: number;
+}
+
+export interface TournamentOutcome {
+  winner: {
+    participantId: string;
+    username: string;
+    profilePicture?: string | null;
+  } | null;
+}
+
+export interface TournamentSummary {
+  id: string;
+  name: string;
+  type: TournamentType;
+  status: TournamentStatus;
+  maxParticipants: number;
+  participantCount: number;
+  startDate: string;
+  currentMatchday?: number;
+  totalMatchdays?: number;
+  viewerIsRegistered?: boolean;
+}
+
+export interface TournamentDetail {
+  id: string;
+  name: string;
+  groupId: string;
+  createdBy: string;
+  type: TournamentType;
+  description?: string;
+
+  status: TournamentStatus;
+  isRegistrationOpen: boolean;
+
+  maxParticipants: number;
+  participantCount: number;
+  participants: TournamentParticipant[];
+
+  registrationDeadline: string;
+  startDate: string;
+  endDate: string;
+
+  tournamentCode: string;
+
+  settings: TournamentSettings;
+  progress: TournamentProgress;
+  viewerContext: TournamentViewerContext;
+
+  fixtures?: TournamentFixture[];
+  standings?: TournamentStandingRow[];
+  outcome?: TournamentOutcome;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentListResponse {
+  success: boolean;
+  tournaments: TournamentSummary[];
+  pagination: PaginationMeta;
+}
+
+export interface TournamentDetailResponse {
+  success: boolean;
+  tournament: TournamentDetail;
+}
+
+export interface ApiTournamentParticipant {
+  id?: string;
+  _id?: string;
+  userId?: string;
+  username: string;
+  profilePicture?: string | null;
+  status?: string;
+  isAdmin?: boolean;
+}
+
+export interface ApiTournamentFixture {
+  id?: string;
+  _id?: string;
+  matchday: number;
+  status: string;
+  scheduledDate?: string;
+  homeParticipant: ApiTournamentParticipant;
+  awayParticipant: ApiTournamentParticipant;
+  homeScore?: number | null;
+  awayScore?: number | null;
+}
+
+export interface ApiTournamentStandingRow {
+  participantId: string;
+  participantName: string;
+  profilePicture?: string | null;
+  position: number;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  points: number;
+}
+
+export interface ApiTournamentOutcome {
+  winner?: {
+    participantId: string;
+    username: string;
+    profilePicture?: string | null;
+  } | null;
+}
+
+export interface ApiTournament {
+  id?: string;
+  _id?: string;
+  name: string;
+  groupId: string;
+  createdBy: string;
+  type: string;
+  description?: string;
+
+  status: string;
+  isRegistrationOpen?: boolean;
+
+  maxParticipants: number;
+  participantCount?: number;
+  totalParticipantsCount?: number;
+  participants?: ApiTournamentParticipant[];
+
+  registrationDeadline?: string;
+  startDate: string;
+  endDate: string;
+
+  tournamentCode?: string;
+
+  settings?: {
+    pointsForWin?: number;
+    pointsForDraw?: number;
+    pointsForLoss?: number;
+    rounds?: "single" | "double";
+  };
+
+  progress?: {
+    totalMatches?: number;
+    completedMatches?: number;
+    currentMatchday?: number;
+    totalMatchdays?: number;
+  };
+
+  totalMatches?: number;
+  completedMatches?: number;
+  currentMatchday?: number;
+  totalMatchdays?: number;
+
+  viewerContext?: {
+    isRegistered?: boolean;
+    role?: string | null;
+    participantId?: string | null;
+    canJoin?: boolean;
+    canLeave?: boolean;
+  };
+
+  userContext?: {
+    isRegistered?: boolean;
+    role?: string | null;
+    participantId?: string | null;
+    canJoin?: boolean;
+    canLeave?: boolean;
+  };
+
+  fixtures?: ApiTournamentFixture[];
+  standings?: ApiTournamentStandingRow[];
+  outcome?: ApiTournamentOutcome;
+
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiTournamentListResponse {
+  success: boolean;
+  tournaments: ApiTournament[];
+  pagination?: {
     total: number;
     totalPages: number;
     currentPage: number;
     limit: number;
     hasNextPage: boolean;
+  };
 }
 
-// ─── API response wrappers ────────────────────────────────────────────────────
-
-export interface TournamentListResponse {
-    success: boolean;
-    tournaments: ApiTournament[];
-    pagination: PaginationMeta;
+export interface ApiTournamentDetailResponse {
+  success: boolean;
+  tournament: ApiTournament;
 }
 
-export interface TournamentResponse {
-    success: boolean;
-    tournament: ApiTournament;
-}
-
-// ─── Raw API shapes ───────────────────────────────────────────────────────────
-
-export interface ApiParticipant {
-    userId: string;
-    username: string;
-    profilePicture: string | null;
-    status: string;
-}
-
-export interface ApiTournament {
-    _id: string;
-    name: string;
-    groupId: string;
-    createdBy: string;
-    type: "league" | "knockout" | "group_stage";
-    description?: string;
-    maxParticipants: number;
-    settings: {
-        pointsForWin: number;
-        pointsForDraw: number;
-        pointsForLoss: number;
-        rounds: "single" | "double";
-    };
-    registrationDeadline: string;
-    isRegistrationOpen: boolean;
-    startDate: string;
-    endDate: string;
-    totalMatches: number;
-    completedMatches: number;
-    currentMatchday: number;
-    totalMatchdays: number;
-    status: TournamentStatus;
-    tournamentCode: string;
-    participants: ApiParticipant[];
-    userContext: {
-        isRegistered: boolean;
-        role: string | null;
-    };
-    createdAt: string;
-    updatedAt: string;
-}
-
-// ─── Lightweight summary — embedded in GroupOverview.tournamentsPreview ───────
-
-export interface TournamentSummary {
-    id: string;
-    name: string;
-    status: TournamentStatus;
-    maxParticipants: number;
-    participantCount: number;
-    startDate: string;
-}
-
-// ─── Full UI-normalised shape ─────────────────────────────────────────────────
-
-export interface Tournament {
-    id: string;
-    name: string;
-    groupId: string;
-    type: string;
-    description?: string;
-    status: TournamentStatus;
-    maxParticipants: number;
-    // Both fields present — API returns participantCount, some components
-    // use totalParticipantsCount. Read both defensively at render time.
-    participantCount: number;
-    totalParticipantsCount: number;
-    participants: ApiParticipant[];
-    isRegistrationOpen: boolean;
-    // ISO strings — always format with fmt() at render time, never display raw
-    startDate: string;
-    endDate: string;
-    registrationDeadline: string;
-    totalMatches: number;
-    completedMatches: number;
-    currentMatchday: number;
-    totalMatchdays: number;
-    tournamentCode: string;
-    settings: ApiTournament["settings"];
-    userContext: {
-        isRegistered: boolean;
-        role: string | null;
-    };
-    heatScore?: number;
-    prizePool?: string;
-}
-
-// ─── Adapters ─────────────────────────────────────────────────────────────────
-export function toTournament(a: ApiTournament): Tournament {
-    const participantCount = a.participants?.length ?? 0;
-
-    return {
-        id: a._id,
-        name: a.name,
-        groupId: a.groupId,
-        type: a.type,
-        description: a.description,
-        status: a.status,
-        maxParticipants: a.maxParticipants,
-        participantCount,
-        totalParticipantsCount: participantCount,
-        participants: a.participants ?? [],
-        isRegistrationOpen: a.isRegistrationOpen,
-        startDate: a.startDate,
-        endDate: a.endDate,
-        registrationDeadline: a.registrationDeadline,
-        totalMatches: a.totalMatches,
-        completedMatches: a.completedMatches,
-        currentMatchday: a.currentMatchday,
-        totalMatchdays: a.totalMatchdays,
-        tournamentCode: a.tournamentCode,
-        settings: a.settings,
-        userContext: a.userContext ?? { isRegistered: false, role: null },
-    };
-}
-
-export function summaryToTournament(s: TournamentSummary, groupId: string): Tournament {
-    return {
-        id: s.id,
-        name: s.name,
-        groupId,
-        type: "league",
-        status: s.status,
-        maxParticipants: s.maxParticipants,
-        participantCount: s.participantCount,
-        totalParticipantsCount: s.participantCount,
-        participants: [],
-        isRegistrationOpen: s.status === "registration",
-        startDate: s.startDate,
-        endDate: "",
-        registrationDeadline: "",
-        totalMatches: 0,
-        completedMatches: 0,
-        currentMatchday: 0,
-        totalMatchdays: 0,
-        tournamentCode: "",
-        settings: {
-            pointsForWin: 3,
-            pointsForDraw: 1,
-            pointsForLoss: 0,
-            rounds: "double",
-        },
-        userContext: { isRegistered: false, role: null },
-    };
-}
+export const STATUS_META: Record<
+  TournamentStatus,
+  { label: string; tone: "primary" | "warning" | "accent" | "status" }
+> = {
+  registration: { label: "Registration Open", tone: "primary" },
+  upcoming: { label: "Upcoming", tone: "warning" },
+  ongoing: { label: "Ongoing", tone: "accent" },
+  completed: { label: "Completed", tone: "status" },
+};

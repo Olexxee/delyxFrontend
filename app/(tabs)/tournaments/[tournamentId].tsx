@@ -1,209 +1,164 @@
-import TournamentCTAs from "@/components/tournament/Tournamentctas";
-import TournamentHeroCard from "@/components/tournament/TournamentHeroCard";
-import TournamentProgress from "@/components/tournament/TournamentProgress";
-import TournamentRulesCard from "@/components/tournament/Tournamentrulescard";
+import TournamentDetailTabs from "@/components/tournament/TournamentDetailTabs";
+import TournamentHero from "@/components/tournament/TournamentHeroCard";
+import TournamentPrimaryAction from "@/components/tournament/TournamentPrimaryAction";
+import TournamentTabContent from "@/components/tournament/TournamentTabContent";
 import {
-    useJoinTournament,
-    useLeaveTournament,
-    useTournamentDetail,
+  useJoinTournament,
+  useLeaveTournament,
+  useTournamentDetail,
 } from "@/hooks/useTournaments";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Copy, Share2 } from "lucide-react-native";
-import React from "react";
+import type { TournamentTabKey } from "@/types/tournament";
+import { getTournamentUIConfig } from "@/components/ui/TournamentUi";
+import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TournamentDetailScreen() {
-    const { colors } = useTheme();
-    const router = useRouter();
-    const { tournamentId } = useLocalSearchParams<{ tournamentId: string }>();
+  const { colors } = useTheme();
+  const { tournamentId } = useLocalSearchParams<{ tournamentId?: string }>();
 
-    const {
-        data: tournament,
-        isLoading,
-        isError,
-        refetch,
-    } = useTournamentDetail(tournamentId);
+  const resolvedTournamentId =
+    typeof tournamentId === "string" ? tournamentId : "";
 
-    const joinMutation = useJoinTournament(tournamentId);
-    const leaveMutation = useLeaveTournament(tournamentId, tournament?.groupId ?? "");
+  const {
+    data: tournament,
+    isLoading,
+    isError,
+    refetch,
+  } = useTournamentDetail(resolvedTournamentId);
 
-    // ── Loading ───────────────────────────────────────────────────────────────
-    if (isLoading) {
-        return (
-            <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-                <View style={styles.center}>
-                    <ActivityIndicator color={colors.accent} size="large" />
-                </View>
-            </SafeAreaView>
-        );
+  const joinMutation = useJoinTournament(resolvedTournamentId);
+  const leaveMutation = useLeaveTournament(resolvedTournamentId);
+
+  const uiConfig = useMemo(
+    () => (tournament ? getTournamentUIConfig(tournament) : null),
+    [tournament],
+  );
+
+  const [activeTab, setActiveTab] = useState<TournamentTabKey>("overview");
+
+  useEffect(() => {
+    if (uiConfig) {
+      setActiveTab(uiConfig.defaultTab);
     }
+  }, [uiConfig]);
 
-    // ── Error ─────────────────────────────────────────────────────────────────
-    if (isError || !tournament) {
-        return (
-            <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-                <View style={styles.center}>
-                    <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-                        Failed to load tournament.
-                    </Text>
-                    <TouchableOpacity
-                        style={[styles.retryBtn, { borderColor: colors.accent }]}
-                        onPress={() => refetch()}
-                    >
-                        <Text style={[styles.retryText, { color: colors.accent }]}>Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
-    // ── Derived state ─────────────────────────────────────────────────────────
-    const participantCount =
-        tournament.participantCount ?? tournament.totalParticipantsCount ?? 0;
-    const isRegistered = tournament.userContext?.isRegistered ?? false;
-    const canJoin =
-        tournament.status === "registration" &&
-        tournament.isRegistrationOpen &&
-        !isRegistered;
-    const isMutating = joinMutation.isPending || leaveMutation.isPending;
-    const showProgress = (tournament.totalMatchdays ?? 0) > 0;
-
-    // ── Handlers ──────────────────────────────────────────────────────────────
-    function handleJoin() {
-        Alert.alert(
-            "Join Tournament",
-            `Join "${tournament!.name}"?`,
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Join",
-                    onPress: () =>
-                        joinMutation.mutate(undefined, {
-                            onError: (e: any) =>
-                                Alert.alert("Error", e?.message ?? "Failed to join."),
-                        }),
-                },
-            ]
-        );
-    }
-
-    function handleLeave() {
-        leaveMutation.mutate(undefined, {
-            onError: (e: any) =>
-                Alert.alert("Error", e?.message ?? "Failed to leave."),
-        });
-    }
-
-    // function handleViewFixtures() {
-    //     router.push({
-    //         pathname: "/tournaments/[tournamentId]/fixtures",
-    //         params: { tournamentId },
-    //     });
-    // }
-
-    // ── Render ────────────────────────────────────────────────────────────────
+  if (isLoading) {
     return (
-        <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-
-            {/* Nav bar */}
-            <View
-                style={[
-                    styles.nav,
-                    { backgroundColor: colors.surface, borderBottomColor: colors.border },
-                ]}
-            >
-                <TouchableOpacity onPress={() => router.back()} style={styles.navBtn} hitSlop={12}>
-                    <ChevronLeft size={24} color={colors.accent} />
-                </TouchableOpacity>
-                <Text style={[styles.navTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-                    Tournament
-                </Text>
-                <View style={styles.navIconRow}>
-                    <TouchableOpacity hitSlop={8}>
-                        <Share2 size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity hitSlop={8}>
-                        <Copy size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.body}
-            >
-                <TournamentHeroCard
-                    tournament={tournament}
-                    participantCount={participantCount}
-                    canJoin={canJoin}
-                />
-
-                <TournamentRulesCard settings={tournament.settings} />
-
-                {showProgress && (
-                    <TournamentProgress
-                        completed={tournament.completedMatches ?? 0}
-                        total={tournament.totalMatches ?? 0}
-                        currentMatchday={tournament.currentMatchday}
-                        totalMatchdays={tournament.totalMatchdays}
-                        asCard
-                    />
-                )}
-
-                <TournamentCTAs
-                    tournament={tournament}
-                    isRegistered={isRegistered}
-                    canJoin={canJoin}
-                    isMutating={isMutating}
-                    isLeavePending={leaveMutation.isPending}
-                    onJoin={handleJoin}
-                    onLeave={handleLeave} onViewFixtures={function (): void {
-                        throw new Error("Function not implemented.");
-                    }}                    // onViewFixtures={handleViewFixtures}
-                />
-            </ScrollView>
-        </SafeAreaView>
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.background }]}
+      >
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
     );
+  }
+
+  if (isError || !tournament) {
+    return (
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.background }]}
+      >
+        <View
+          style={[
+            styles.errorCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>
+            Could not load tournament
+          </Text>
+          <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+            Please try refreshing the page.
+          </Text>
+          <Text
+            onPress={() => refetch()}
+            style={[styles.retryText, { color: colors.primary }]}
+          >
+            Retry
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.background }]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <TournamentHero
+          tournament={tournament}
+          showProgress={uiConfig?.showProgress}
+          showWinnerBanner={uiConfig?.showWinnerBanner}
+          showViewerRegistrationState={uiConfig?.showViewerRegistrationState}
+        />
+
+        {uiConfig?.showPrimaryAction ? (
+          <TournamentPrimaryAction
+            tournament={tournament}
+            joining={joinMutation.isPending}
+            leaving={leaveMutation.isPending}
+            onJoin={() => joinMutation.mutate()}
+            onLeave={() => leaveMutation.mutate()}
+          />
+        ) : null}
+
+        <TournamentDetailTabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          visibleTabs={uiConfig?.visibleTabs ?? ["overview"]}
+        />
+
+        <TournamentTabContent activeTab={activeTab} tournament={tournament} />
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1 },
-    center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-    errorText: { fontSize: 14 },
-    retryBtn: {
-        borderWidth: 1,
-        borderRadius: 10,
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-    },
-    retryText: { fontSize: 14, fontWeight: "600" },
-
-    nav: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    navBtn: { width: 40 },
-    navTitle: { fontSize: 16, fontWeight: "700", flex: 1, textAlign: "center" },
-    navIconRow: {
-        flexDirection: "row",
-        gap: 14,
-        width: 40,
-        justifyContent: "flex-end",
-    },
-
-    body: { padding: 16, gap: 12, paddingBottom: 48 },
+  screen: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    gap: 16,
+    paddingBottom: 40,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
+    gap: 8,
+    width: "100%",
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  errorText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  retryText: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: "700",
+  },
 });

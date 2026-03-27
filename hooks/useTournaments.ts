@@ -5,86 +5,157 @@ import {
   getTournamentById,
   joinTournament,
   leaveTournament,
-} from "@/api/apiService";
-import type { ApiTournament } from "@/types/tournament";
-import { toTournament } from "@/types/tournament";
+} from "@/api/tournamentApi";
+import type {
+  TournamentDetail,
+  TournamentSummary,
+  TournamentType,
+  TournamentRoundMode,
+} from "@/types/tournament";
+import type {
+  ApiTournamentDetailResponse,
+  ApiTournamentListResponse,
+} from "@/types/tournamentApi";
+import {
+  toTournamentDetail,
+  toTournamentSummary,
+} from "@/utils/tournamentMappers";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const tournamentKeys = {
   all: ["tournaments", "all"] as const,
   byGroup: (groupId: string) => ["tournaments", "group", groupId] as const,
-  detail: (tournamentId: string) => ["tournaments", "detail", tournamentId] as const,
+  groupRoot: ["tournaments", "group"] as const,
+  detail: (tournamentId: string) =>
+    ["tournaments", "detail", tournamentId] as const,
+};
+
+export type CreateTournamentPayload = {
+  name: string;
+  description?: string;
+  groupId: string;
+  type: Extract<TournamentType, "league" | "knockout">;
+  maxParticipants: number;
+  settings: {
+    pointsForWin: number;
+    pointsForDraw: number;
+    pointsForLoss: number;
+    rounds: TournamentRoundMode;
+  };
+  startDate: string;
+  endDate: string;
+  registrationDeadline: string;
 };
 
 export function useAllTournaments() {
-  return useQuery({
+  return useQuery<TournamentSummary[]>({
     queryKey: tournamentKeys.all,
-    queryFn: async () => {
-      const data = await fetchAllTournaments();
-      return data.tournaments.map(toTournament);
+    queryFn: async (): Promise<TournamentSummary[]> => {
+      const data: ApiTournamentListResponse = await fetchAllTournaments();
+      return data.tournaments.map(toTournamentSummary);
     },
   });
 }
 
 export function useGroupTournaments(groupId: string) {
-  return useQuery({
+  return useQuery<TournamentSummary[]>({
     queryKey: tournamentKeys.byGroup(groupId),
-    queryFn: async () => {
-      const data = await getGroupTournaments(groupId);
-      return (data.tournaments as ApiTournament[]).map(toTournament);
+    queryFn: async (): Promise<TournamentSummary[]> => {
+      const data: ApiTournamentListResponse = await getGroupTournaments(groupId);
+      return data.tournaments.map(toTournamentSummary);
     },
-    enabled: !!groupId && groupId !== "undefined",
+    enabled: Boolean(groupId && groupId !== "undefined"),
   });
 }
 
 export function useTournamentDetail(tournamentId: string) {
-  return useQuery({
+  return useQuery<TournamentDetail>({
     queryKey: tournamentKeys.detail(tournamentId),
-    queryFn: async () => {
-      const data = await getTournamentById(tournamentId);
-      return toTournament(data.tournament as ApiTournament);
+    queryFn: async (): Promise<TournamentDetail> => {
+      const data: ApiTournamentDetailResponse =
+        await getTournamentById(tournamentId);
+      return toTournamentDetail(data.tournament);
     },
-    enabled: !!tournamentId && tournamentId !== "undefined",
+    enabled: Boolean(tournamentId && tournamentId !== "undefined"),
   });
 }
 
 export function useCreateTournament(groupId: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: createTournament,
+    mutationFn: (payload: CreateTournamentPayload) => createTournament(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.byGroup(groupId) });
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.byGroup(groupId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.all,
+      });
     },
   });
 }
 
-// Combined join — joins the group AND the tournament in one request
 export function useJoinTournament(tournamentId: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: () => joinTournament(tournamentId),  // POST /:tournamentId/join
+    mutationFn: async () => {
+      if (!tournamentId || tournamentId === "undefined") {
+        throw new Error("Invalid tournamentId");
+      }
+
+      return joinTournament(tournamentId);
+    },
     onSuccess: (data) => {
-      // Invalidate tournament detail so userContext.isRegistered updates
+      if (data?.tournament) {
+        queryClient.setQueryData(
+          tournamentKeys.detail(tournamentId),
+          data.tournament,
+        );
+      }
+
       queryClient.invalidateQueries({
         queryKey: tournamentKeys.detail(tournamentId),
       });
-      // Invalidate all tournaments list so participant count updates
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.groupRoot,
+      });
     },
   });
 }
 
-export function useLeaveTournament(tournamentId: string, groupId: string) {
+export function useLeaveTournament(tournamentId: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: () => leaveTournament(tournamentId),
-    onSuccess: () => {
+    mutationFn: async () => {
+      if (!tournamentId || tournamentId === "undefined") {
+        throw new Error("Invalid tournamentId");
+      }
+
+      return leaveTournament(tournamentId);
+    },
+    onSuccess: (data) => {
+      if (data?.tournament) {
+        queryClient.setQueryData(
+          tournamentKeys.detail(tournamentId),
+          data.tournament,
+        );
+      }
+
       queryClient.invalidateQueries({
         queryKey: tournamentKeys.detail(tournamentId),
       });
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.byGroup(groupId) });
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: tournamentKeys.groupRoot,
+      });
     },
   });
 }

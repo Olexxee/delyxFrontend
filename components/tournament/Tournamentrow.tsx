@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import TournamentActions from "./TournamentActions";
 import TournamentHeader from "./TournamentHeader";
-import TournamentParticipants from "./TournamentParticipants";
+import TournamentParticipants from "./TournamentParticipantsTab";
 import TournamentProgress from "./TournamentProgress";
 import TournamentTimeline from "./TournamentTimeline";
 

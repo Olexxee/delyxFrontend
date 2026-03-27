@@ -1,7 +1,11 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "react-native",
+    "moduleResolution": "node",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
@@ -9,9 +13,10 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "app/_layout.jsx",
-    "authContext/UserContext.ts"
-, "api/useDeviceToken.js", "api/messaging.jsx", "components/ui/NotificationModal.tsx", "components/group/GroupListScreen.tsx", "components/group/GroupCard.jsx", "api/socketRegistry.tsx", "api/socketRegistry.tsx", "components/group/groupChatScreen.jsx"  ]
+    "expo-env.d.ts"
+  ],
+  "exclude": ["node_modules"]
 }

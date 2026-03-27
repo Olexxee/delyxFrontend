@@ -1,12 +1,17 @@
-type TournamentTabContentProps = {
+import type { TournamentDetail, TournamentTabKey } from "@/";
+import React from "react";
+import TournamentFixturesTab from "./TournamentFixturesTab";
+import TournamentOverviewTab from "./TournamentOverviewTab";
+import TournamentParticipantsTab from "./TournamentParticipantsTab";
+import TournamentResultsTab from "./TournamentResultsTab";
+import TournamentStandingsTab from "./TournamentStandingsTab";
+
+interface Props {
   activeTab: TournamentTabKey;
   tournament: TournamentDetail;
-};
+}
 
-export function TournamentTabContent({
-  activeTab,
-  tournament,
-}: TournamentTabContentProps) {
+export default function TournamentTabContent({ activeTab, tournament }: Props) {
   switch (activeTab) {
     case "overview":
       return <TournamentOverviewTab tournament={tournament} />;
@@ -15,9 +20,9 @@ export function TournamentTabContent({
       return (
         <TournamentParticipantsTab
           participants={tournament.participants}
-          viewerParticipantId={tournament.viewerParticipantId}
+          viewerParticipantId={tournament.viewerContext.participantId}
           maxParticipants={tournament.maxParticipants}
-          participantsCount={tournament.participantsCount}
+          participantCount={tournament.participantCount}
           status={tournament.status}
         />
       );
@@ -26,7 +31,7 @@ export function TournamentTabContent({
       return (
         <TournamentFixturesTab
           fixtures={tournament.fixtures ?? []}
-          viewerParticipantId={tournament.viewerParticipantId}
+          viewerParticipantId={tournament.viewerContext.participantId}
         />
       );
 
@@ -34,7 +39,7 @@ export function TournamentTabContent({
       return (
         <TournamentStandingsTab
           standings={tournament.standings ?? []}
-          viewerParticipantId={tournament.viewerParticipantId}
+          viewerParticipantId={tournament.viewerContext.participantId}
         />
       );
 
