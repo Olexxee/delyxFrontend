@@ -1,4 +1,4 @@
-import type { TournamentDetail, TournamentTabKey } from "@/";
+import type { TournamentDetail, TournamentTabKey } from "@/types/tournament";
 import React from "react";
 import TournamentFixturesTab from "./TournamentFixturesTab";
 import TournamentOverviewTab from "./TournamentOverviewTab";

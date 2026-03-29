@@ -10,19 +10,22 @@ import {
 import { useTheme } from "@/theme/ThemeProvider";
 import type { TournamentTabKey } from "@/types/tournament";
 import { getTournamentUIConfig } from "@/components/ui/TournamentUi";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TournamentDetailScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { tournamentId } = useLocalSearchParams<{ tournamentId?: string }>();
 
   const resolvedTournamentId =
@@ -64,26 +67,36 @@ export default function TournamentDetailScreen() {
   if (isError || !tournament) {
     return (
       <SafeAreaView
-        style={[styles.centered, { backgroundColor: colors.background }]}
+        style={[styles.screen, { backgroundColor: colors.background }]}
       >
-        <View
-          style={[
-            styles.errorCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>
-            Could not load tournament
-          </Text>
-          <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-            Please try refreshing the page.
-          </Text>
-          <Text
-            onPress={() => refetch()}
-            style={[styles.retryText, { color: colors.primary }]}
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+
+        <View style={styles.centeredContent}>
+          <View
+            style={[
+              styles.errorCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
           >
-            Retry
-          </Text>
+            <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>
+              Could not load tournament
+            </Text>
+            <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+              Please try refreshing the page.
+            </Text>
+            <Text
+              onPress={() => refetch()}
+              style={[styles.retryText, { color: colors.primary }]}
+            >
+              Retry
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -93,6 +106,14 @@ export default function TournamentDetailScreen() {
     <SafeAreaView
       style={[styles.screen, { backgroundColor: colors.background }]}
     >
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={styles.backButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -130,12 +151,23 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  backButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: "flex-start",
+  },
   content: {
     padding: 16,
     gap: 16,
     paddingBottom: 40,
   },
   centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  centeredContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

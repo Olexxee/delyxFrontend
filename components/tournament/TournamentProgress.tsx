@@ -1,37 +1,35 @@
 import { useTheme } from "@/theme/ThemeProvider";
-import type { TournamentProgress as TournamentProgressType } from "@/types/tournament";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 interface Props {
-  progress: TournamentProgressType;
-  asCard?: boolean;
+  currentMatchday?: number;
+  totalMatchdays?: number;
 }
 
 export default function TournamentProgress({
-  progress,
-  asCard = false,
+  currentMatchday,
+  totalMatchdays,
 }: Props) {
   const { colors } = useTheme();
 
-  const {
-    completedMatches,
-    totalMatches,
-    currentMatchday,
-    totalMatchdays,
-  } = progress;
+  if (
+    typeof currentMatchday !== "number" ||
+    typeof totalMatchdays !== "number" ||
+    totalMatchdays <= 0
+  ) {
+    return null;
+  }
 
-  const percent =
-    totalMatches === 0 ? 0 : Math.round((completedMatches / totalMatches) * 100);
+  const percent = Math.min(
+    Math.round((currentMatchday / totalMatchdays) * 100),
+    100,
+  );
 
-  const bar = (
-    <>
+  return (
+    <View style={styles.container}>
       <Text style={[styles.matchdayText, { color: colors.textSecondary }]}>
         Matchday {currentMatchday} of {totalMatchdays}
-      </Text>
-
-      <Text style={[styles.matchesText, { color: colors.textSecondary }]}>
-        {completedMatches}/{totalMatches} matches {asCard ? "played" : ""}
       </Text>
 
       <View style={[styles.track, { backgroundColor: colors.border }]}>
@@ -39,64 +37,23 @@ export default function TournamentProgress({
           style={[
             styles.fill,
             {
-              backgroundColor: asCard ? colors.primary : colors.accent,
+              backgroundColor: colors.accent,
               width: `${percent}%`,
             },
           ]}
         />
       </View>
-
-      {asCard ? (
-        <Text style={[styles.subLabel, { color: colors.textSecondary }]}>
-          {completedMatches} of {totalMatches} matches completed
-        </Text>
-      ) : null}
-    </>
+    </View>
   );
-
-  if (asCard) {
-    return (
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
-        <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-          Progress
-        </Text>
-        {bar}
-      </View>
-    );
-  }
-
-  return <View style={styles.simple}>{bar}</View>;
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    gap: 6,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  simple: {
+  container: {
     marginBottom: 10,
-    gap: 4,
+    gap: 6,
   },
   matchdayText: {
     fontSize: 13,
-  },
-  matchesText: {
-    fontSize: 12,
-  },
-  subLabel: {
-    fontSize: 11,
   },
   track: {
     height: 6,

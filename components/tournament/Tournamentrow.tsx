@@ -1,5 +1,5 @@
 import { useTheme } from "@/theme/ThemeProvider";
-import type { Tournament } from "@/types/tournament";
+import type { TournamentSummary } from "@/types/tournament";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import TournamentActions from "./TournamentActions";
@@ -9,68 +9,67 @@ import TournamentProgress from "./TournamentProgress";
 import TournamentTimeline from "./TournamentTimeline";
 
 interface TournamentRowProps {
-    tournament: Tournament;
-    onJoin?: () => void;
-    onView?: () => void;
+  tournament: TournamentSummary;
+  onJoin?: () => void;
+  onView?: () => void;
 }
 
 export default function TournamentRow({
-    tournament,
-    onJoin,
-    onView,
+  tournament,
+  onJoin,
+  onView,
 }: TournamentRowProps) {
-    const { colors } = useTheme();
+  const { colors } = useTheme();
 
-    return (
-        <View
-            style={[
-                styles.card,
-                {
-                    backgroundColor: colors.surface,
-                    shadowColor: colors.textPrimary,
-                    borderColor: colors.border,
-                },
-            ]}
-        >
-            <TournamentHeader
-                name={tournament.name}
-                tournamentCode={tournament.tournamentCode}
-                status={tournament.status}
-            />
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          shadowColor: colors.textPrimary,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <TournamentHeader
+        name={tournament.name}
+        type={tournament.type}
+        status={tournament.status}
+      />
 
-            <TournamentParticipants
-                current={tournament.totalParticipantsCount}
-                max={tournament.maxParticipants}
-            />
+      <TournamentParticipants
+        current={tournament.participantCount}
+        max={tournament.maxParticipants}
+      />
 
-            <TournamentTimeline
-                startDate={tournament.startDate}
-                endDate={tournament.endDate}
-            />
+      <TournamentTimeline startDate={tournament.startDate} />
 
-            <TournamentProgress
-                completed={tournament.completedMatches}
-                total={tournament.totalMatches}
-            />
+      <TournamentProgress
+        currentMatchday={tournament.currentMatchday}
+        totalMatchdays={tournament.totalMatchdays}
+      />
 
-            <TournamentActions
-                canJoin={tournament.isRegistrationOpen}
-                onJoin={onJoin}
-                onView={onView}
-            />
-        </View>
-    );
+      <TournamentActions
+        canJoin={
+          tournament.status === "registration" && !tournament.viewerIsRegistered
+        }
+        onJoin={onJoin}
+        onView={onView}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    card: {
-        borderRadius: 12,
-        borderWidth: StyleSheet.hairlineWidth,
-        padding: 16,
-        marginBottom: 12,
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-    },
+  card: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    marginBottom: 12,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
 });

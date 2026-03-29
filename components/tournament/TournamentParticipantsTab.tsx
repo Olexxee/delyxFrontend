@@ -1,67 +1,41 @@
 import { useTheme } from "@/theme/ThemeProvider";
-import type { TournamentParticipant, TournamentStatus } from "@/types/tournament";
-import { sortParticipantsForViewer } from "@/utils/tournamentHelpers";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-interface Props {
-  participants: TournamentParticipant[];
-  viewerParticipantId?: string | null;
-  maxParticipants: number;
-  participantCount: number;
-  status: TournamentStatus;
+interface TournamentParticipantsProps {
+  current: number;
+  max: number;
 }
 
-export default function TournamentParticipantsTab({
-  participants,
-  viewerParticipantId,
-  maxParticipants,
-  participantCount,
-}: Props) {
+export default function TournamentParticipants({
+  current,
+  max,
+}: TournamentParticipantsProps) {
   const { colors } = useTheme();
 
-  const sortedParticipants = sortParticipantsForViewer(
-    participants,
-    viewerParticipantId
-  );
+  const progress = max > 0 ? Math.min(current / max, 1) : 0;
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.headerText, { color: colors.textSecondary }]}>
-        {participantCount}/{maxParticipants} registered
-      </Text>
+      <View style={styles.row}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          Participants
+        </Text>
+        <Text style={[styles.value, { color: colors.textPrimary }]}>
+          {current}/{max}
+        </Text>
+      </View>
 
-      <View style={styles.grid}>
-        {sortedParticipants.map((participant) => {
-          const isViewer = participant.id === viewerParticipantId;
-
-          return (
-            <View
-              key={participant.id}
-              style={[
-                styles.card,
-                {
-                  backgroundColor: isViewer ? `${colors.accent}14` : colors.surface,
-                  borderColor: isViewer ? colors.accent : colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
-                {participant.username}
-              </Text>
-
-              <View style={styles.metaRow}>
-                <Text style={[styles.meta, { color: colors.textSecondary }]}>
-                  {participant.status}
-                </Text>
-
-                {isViewer ? (
-                  <Text style={[styles.you, { color: colors.accent }]}>You</Text>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
+      <View style={[styles.track, { backgroundColor: colors.surfaceLight }]}>
+        <View
+          style={[
+            styles.fill,
+            {
+              backgroundColor: colors.primary,
+              width: `${progress * 100}%`,
+            },
+          ]}
+        />
       </View>
     </View>
   );
@@ -69,35 +43,29 @@ export default function TournamentParticipantsTab({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
-  },
-  headerText: {
-    fontSize: 13,
-  },
-  grid: {
-    gap: 10,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
     gap: 8,
+    marginBottom: 12,
   },
-  name: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  metaRow: {
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
-  meta: {
-    fontSize: 12,
-    textTransform: "capitalize",
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
   },
-  you: {
-    fontSize: 12,
+  value: {
+    fontSize: 13,
     fontWeight: "700",
+  },
+  track: {
+    height: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  fill: {
+    height: "100%",
+    borderRadius: 999,
   },
 });
