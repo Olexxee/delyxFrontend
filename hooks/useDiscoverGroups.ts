@@ -9,6 +9,6 @@ export const useDiscoverGroups = (search: string) => {
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
-    staleTime: 1000 * 60 * 5, // ✅ discover doesn't need frequent refetches
+    staleTime: 1000 * 60 * 5,
   });
 };

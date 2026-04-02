@@ -1,14 +1,15 @@
-import type { DiscoverGroupsResponse, GroupOverview } from "@/types/group";
+import type {
+  GroupOverview,
+  MyGroupItem,
+  MyGroupsResponse,
+} from "@/types/group";
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
 
 /**
  * Fetches discoverable groups from the backend
  */
-export const getDiscoverGroups = async (
-  page: number,
-  search: string,
-): Promise<DiscoverGroupsResponse> => {
+export const getDiscoverGroups = async (page: number, search: string) => {
   const { data } = await api.get("/groups/discover", {
     params: { page, limit: 20, search },
   });
@@ -24,10 +25,10 @@ export const getDiscoverGroups = async (
         name: g.name,
         avatar:
           typeof g.avatar === "string" ? g.avatar : (g.avatar?.url ?? null),
-        privacy: "public",
+        privacy: g.privacy ?? "public",
         totalMembers: g.totalMembers ?? 0,
         description: g.description ?? "",
-        myRole: g.myRole ?? null,
+        myRole: g.myRole ?? "member",
         tournamentsPreview: g.tournamentsPreview ?? [],
         membersPreview: g.membersPreview ?? [],
       }),
@@ -35,19 +36,29 @@ export const getDiscoverGroups = async (
   };
 };
 
+export const getMyGroups = async (): Promise<MyGroupItem[]> => {
+  const { data } = await api.get<MyGroupsResponse>("/groups/me");
+  return data.data;
+};
+
 const searchGroupsByName = async (name: string): Promise<GroupOverview[]> => {
+  if (!name.trim()) return [];
+
   const { data } = await api.get(
     `/groups/name/${encodeURIComponent(name.trim())}`,
   );
-  return (data.groups ?? []).map(
+
+  const groupList = data.groups || [];
+
+  return groupList.map(
     (g: any): GroupOverview => ({
-      id: g.id,
+      id: g.id || g._id,
       name: g.name,
       avatar: typeof g.avatar === "string" ? g.avatar : (g.avatar?.url ?? null),
       privacy: g.privacy ?? "public",
       totalMembers: g.totalMembers ?? 0,
-      chatRoomId: g.chatRoomId,
-      description: g.description ?? "",
+      chatRoomId: g.chatRoomId ?? null,
+      description: g.description || g.bio || "",
       myRole: g.myRole ?? null,
       tournamentsPreview: g.tournamentsPreview ?? [],
       membersPreview: g.membersPreview ?? [],

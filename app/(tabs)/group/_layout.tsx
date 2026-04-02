@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-export default function ChatsLayout() {
+export default function GroupsLayout() {
   return (
     <Stack
       screenOptions={{
