@@ -1,7 +1,10 @@
 import type { AvatarUrl, ID } from "./common";
 import type { GroupPrivacy, Role } from "./group";
 import type { MemberSummary } from "./member";
-import type { GroupActiveTournament, GroupTournamentStats } from "./groupTournament";
+import type {
+  GroupActiveTournament,
+  GroupTournamentStats,
+} from "./groupTournament";
 
 export type GroupHub = {
   group: {
@@ -15,12 +18,16 @@ export type GroupHub = {
     myRole: Role;
     isMuted?: boolean;
   };
+
   activeTournament?: GroupActiveTournament | null;
+
   stats: GroupTournamentStats & {
     totalMessages?: number;
     activeMembers7d?: number;
   };
+
   membersPreview: MemberSummary[];
+
   quickActions: {
     canCreateTournament: boolean;
     canManageGroup: boolean;

@@ -1,10 +1,3 @@
-import { useEffect } from "react";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
 import {
   fetchConversationDetail,
   fetchConversationMessages,
@@ -12,7 +5,14 @@ import {
   markConversationRead,
   sendConversationMessage,
 } from "@/api/conversationService";
-import type { ChatMessage } from "@/types/converstionType";
+import type { ChatMessage } from "@/types/converstion";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export const conversationKeys = {
   all: ["conversations"] as const,
@@ -21,6 +21,14 @@ export const conversationKeys = {
     [...conversationKeys.all, "detail", chatRoomId] as const,
   messages: (chatRoomId: string) =>
     [...conversationKeys.all, "messages", chatRoomId] as const,
+};
+
+export const sortAscending = (a: ChatMessage, b: ChatMessage): number => {
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+};
+
+export const sortDescending = (a: ChatMessage, b: ChatMessage): number => {
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 };
 
 export const useInbox = () => {
@@ -65,7 +73,8 @@ export const useSendConversationMessage = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: sendConversationMessage,
+    mutationFn: (variables) =>
+      sendConversationMessage({ chatRoomId, ...variables }),
     onMutate: async ({ content, mediaIds = [] }) => {
       await queryClient.cancelQueries({
         queryKey: conversationKeys.messages(chatRoomId),
@@ -78,6 +87,13 @@ export const useSendConversationMessage = (
       const optimisticMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         chatRoomId,
+        kind: "user",
+        contentType:
+          content && mediaIds.length
+            ? "mixed"
+            : mediaIds.length
+              ? "media"
+              : "text",
         sender: {
           id: currentUserId,
           username: "Me",
@@ -85,51 +101,32 @@ export const useSendConversationMessage = (
         },
         content: content || "",
         media: mediaIds,
-        messageType:
-          content && mediaIds.length
-            ? "mixed"
-            : mediaIds.length
-              ? "media"
-              : "text",
         meta: null,
         createdAt: new Date().toISOString(),
         isMine: true,
       };
-
       queryClient.setQueryData(
         conversationKeys.messages(chatRoomId),
-        (old: any) => {
-          if (!old?.pages?.length) {
-            return {
-              pages: [
-                {
-                  messages: [optimisticMessage],
-                  count: 1,
-                  hasMore: false,
-                },
-              ],
-              pageParams: [undefined],
-            };
-          }
-
-          const firstPage = old.pages[0];
-
+        (oldData: any) => {
+          if (!oldData) return oldData;
           return {
-            ...old,
-            pages: [
-              {
-                ...firstPage,
-                messages: [optimisticMessage, ...firstPage.messages],
-              },
-              ...old.pages.slice(1),
-            ],
+            ...oldData,
+            pages: oldData.pages.map((page: any, index: number) =>
+              index === 0
+                ? { ...page, messages: [optimisticMessage, ...page.messages] }
+                : page,
+            ),
           };
         },
       );
 
       return { previous };
     },
-    onError: (_error, _variables, context) => {
+    onError: (
+      _error: unknown,
+      _variables: { content: string; mediaIds?: string[] },
+      context: { previous: any } | undefined,
+    ) => {
       if (context?.previous) {
         queryClient.setQueryData(
           conversationKeys.messages(chatRoomId),

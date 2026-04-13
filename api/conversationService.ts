@@ -3,7 +3,7 @@ import type {
   ConversationDetail,
   ConversationMessagesResponse,
   InboxResponse,
-} from "@/types/converstionType";
+} from "@/types/converstion";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -12,7 +12,9 @@ type ApiEnvelope<T> = {
 };
 
 export const fetchInbox = async (): Promise<InboxResponse> => {
-  const response = await api.get<ApiEnvelope<InboxResponse>>("/conversations/inbox");
+  const response = await api.get<ApiEnvelope<InboxResponse>>(
+    "/conversations/inbox",
+  );
   return response.data.data;
 };
 

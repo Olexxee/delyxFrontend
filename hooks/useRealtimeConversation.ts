@@ -1,8 +1,8 @@
 import { useSocket } from "@/api/socketRegistry";
-import { useCallback, useEffect, useRef } from "react";
+import type { ChatMessage, ChatMessageContentType } from "@/types/converstion";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ChatMessage, ChatMessageType } from "@/types/converstionType";
-import { conversationKeys } from "./useConversations";
+import { useCallback, useEffect, useRef } from "react";
+import { conversationKeys, sortAscending } from "./useConversations";
 
 type IncomingBackendMessage = {
   id?: string;
@@ -16,23 +16,29 @@ type IncomingBackendMessage = {
   } | null;
   content?: string;
   media?: string[];
-  messageType?: ChatMessageType;
+  messageType?: "text" | "media" | "mixed" | "system";
   meta?: Record<string, unknown> | null;
   createdAt?: string | Date;
 };
-
-const sortAscending = (a: ChatMessage, b: ChatMessage) =>
-  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 
 const normaliseIncomingMessage = (
   msg: IncomingBackendMessage,
   userId: string,
 ): ChatMessage => {
   const senderId = msg.sender?.id ?? msg.sender?._id ?? "unknown";
+  const rawType = msg.messageType ?? "text";
+
+  const kind = rawType === "system" ? "system" : "user";
+  const contentType: ChatMessageContentType | undefined =
+    rawType === "text" || rawType === "media" || rawType === "mixed"
+      ? rawType
+      : undefined;
 
   return {
     id: msg.id ?? msg._id ?? `temp-${Date.now()}`,
     chatRoomId: msg.chatRoomId,
+    kind,
+    contentType,
     sender: msg.sender
       ? {
           id: senderId,
@@ -42,7 +48,6 @@ const normaliseIncomingMessage = (
       : null,
     content: msg.content ?? "",
     media: msg.media ?? [],
-    messageType: msg.messageType ?? "text",
     meta: msg.meta ?? null,
     createdAt: msg.createdAt
       ? new Date(msg.createdAt).toISOString()
@@ -51,10 +56,7 @@ const normaliseIncomingMessage = (
   };
 };
 
-export function useRealtimeConversation(
-  chatRoomId?: string,
-  userId?: string,
-) {
+export function useRealtimeConversation(chatRoomId?: string, userId?: string) {
   const { socket, isConnected } = useSocket();
   const queryClient = useQueryClient();
   const userIdRef = useRef(userId);

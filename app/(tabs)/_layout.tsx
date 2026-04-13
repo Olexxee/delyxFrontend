@@ -1,7 +1,7 @@
 import { UserContext } from "@/authContext/UserContext";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Redirect, Tabs } from "expo-router";
-import { Home, MessageCircle, Trophy, Users } from "lucide-react-native";
+import { Home, MessageCircle, Trophy, User } from "lucide-react-native";
 import React, { useContext, useEffect, useRef } from "react";
 import { Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +28,7 @@ function AnimatedIcon({
       tension: 160,
       useNativeDriver: true,
     }).start();
-  }, [focused]);
+  }, [focused, scale]);
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -42,7 +42,6 @@ export default function TabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // 🔐 Auth guard (this is the ONLY new logic)
   if (isRestoring) return null;
 
   if (!user) {
@@ -76,10 +75,10 @@ export default function TabsLayout() {
                   inactiveColor={colors.textSecondary}
                 />
               );
-            case "group":
+            case "chat":
               return (
                 <AnimatedIcon
-                  Icon={Users}
+                  Icon={MessageCircle}
                   focused={focused}
                   activeColor={colors.accent}
                   inactiveColor={colors.textSecondary}
@@ -97,7 +96,7 @@ export default function TabsLayout() {
             case "profile":
               return (
                 <AnimatedIcon
-                  Icon={MessageCircle}
+                  Icon={User}
                   focused={focused}
                   activeColor={colors.accent}
                   inactiveColor={colors.textSecondary}
@@ -109,10 +108,10 @@ export default function TabsLayout() {
         },
       })}
     >
-      <Tabs.Screen name="feed" />
-      <Tabs.Screen name="group" />
-      <Tabs.Screen name="tournaments" />
-      <Tabs.Screen name="profile" />
+      <Tabs.Screen name="feed" options={{ title: "Feed" }} />
+      <Tabs.Screen name="chat" options={{ title: "Chats" }} />
+      <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );
 }

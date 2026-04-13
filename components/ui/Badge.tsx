@@ -1,56 +1,57 @@
-import { useTheme } from "@/theme/ThemeProvider";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "@/theme/ThemeProvider";
 
-type BadgeProps = {
+type PillBadgeProps = {
   label: string;
-  type?: "rank" | "medal" | "status";
-  color?: string;
-  size?: number;
+  backgroundColor?: string;
+  textColor?: string;
+  compact?: boolean;
 };
 
-export function Badge({
+export function PillBadge({
   label,
-  type = "status",
-  color,
-  size = 16,
-}: BadgeProps) {
+  backgroundColor,
+  textColor,
+  compact = true,
+}: PillBadgeProps) {
   const { colors } = useTheme();
-
-  const backgroundColor =
-    color ||
-    (type === "rank"
-      ? colors.primary
-      : type === "medal"
-        ? colors.accent
-        : colors.warning);
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor,
-          minWidth: size * 2,
-          height: size,
-          borderRadius: size / 2,
+          backgroundColor: backgroundColor ?? colors.surfaceLight,
+          paddingHorizontal: compact ? 8 : 10,
+          height: compact ? 22 : 26,
+          borderRadius: compact ? 11 : 13,
         },
       ]}
     >
-      <Text style={[styles.text, { fontSize: size / 2 }]}>{label}</Text>
+      <Text
+        style={[
+          styles.text,
+          {
+            color: textColor ?? colors.textSecondary,
+            fontSize: compact ? 11 : 12,
+          },
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 6,
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "flex-start",
   },
   text: {
-    color: "#fff",
-    fontWeight: "700",
-    textAlign: "center",
+    fontWeight: "600",
   },
 });

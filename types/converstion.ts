@@ -4,24 +4,28 @@ import type { Role } from "./group";
 export type ConversationType = "group" | "direct";
 
 export type ConversationItem = {
-  id: string;
+  chatRoomId: string;
   type: ConversationType;
   title: string;
   avatarUrl?: string | null;
+
   lastMessage?: {
     text: string;
     createdAt: string;
     senderName?: string;
     isSystem?: boolean;
   } | null;
+
   unreadCount: number;
   isMuted: boolean;
   isPinned: boolean;
+
   directMeta?: {
     userId: string;
     username?: string;
     isOnline?: boolean;
   };
+
   groupMeta?: {
     groupId: string;
     totalMembers: number;
@@ -40,17 +44,19 @@ export type InboxResponse = {
 
 export type ConversationDetail = {
   conversation: {
-    id: string;
+    chatRoomId: string;
     type: ConversationType;
     title: string;
     avatarUrl?: string | null;
     isMuted?: boolean;
   };
+
   directMeta?: {
     userId: string;
     username?: string;
     isOnline?: boolean;
   };
+
   groupMeta?: {
     groupId: string;
     totalMembers: number;
@@ -63,22 +69,31 @@ export type ConversationDetail = {
   };
 };
 
-export type ChatMessageType = "text" | "media" | "mixed" | "system";
+export type ChatMessageKind = "user" | "system";
+export type ChatMessageContentType = "text" | "media" | "mixed";
 
 export type ChatMessage = {
   id: string;
-  chatRoomId: string;
-  sender: {
-    id: string;
-    username: string;
+  chatRoomId?: string;
+
+  kind: ChatMessageKind;
+  contentType?: ChatMessageContentType;
+
+  content?: string | null;
+  createdAt: string;
+  isMine?: boolean;
+
+  media: string[];
+
+  sender?: {
+    id?: string;
+    username?: string;
     profilePicture?: string | null;
   } | null;
-  content: string;
-  media: string[];
-  messageType: ChatMessageType;
-  meta?: Record<string, unknown> | null;
-  createdAt: string;
-  isMine: boolean;
+
+  meta?: {
+    tournamentId?: string;
+  } | null;
 };
 
 export type ConversationMessagesResponse = {

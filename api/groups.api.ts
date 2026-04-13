@@ -5,6 +5,7 @@ import type {
 } from "@/types/group";
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
+import { GroupHub } from "@/types/groupHub";
 
 /**
  * Fetches discoverable groups from the backend
@@ -34,6 +35,11 @@ export const getDiscoverGroups = async (page: number, search: string) => {
       }),
     ),
   };
+};
+
+export const fetchGroupHub = async (groupId: string): Promise<GroupHub> => {
+  const { data } = await api.get(`/groups/${groupId}/hub`);
+  return data.data;
 };
 
 export const getMyGroups = async (): Promise<MyGroupItem[]> => {
