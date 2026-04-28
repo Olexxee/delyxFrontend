@@ -3,7 +3,7 @@ import type {
   ConversationDetail,
   ConversationMessagesResponse,
   InboxResponse,
-} from "@/types/converstion";
+} from "@/types/conversation";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -52,15 +52,13 @@ export const sendConversationMessage = async ({
   mediaIds = [],
 }: {
   chatRoomId: string;
-  content?: string;
+  content: string;
   mediaIds?: string[];
 }) => {
-  const response = await api.post("/chat/message", {
-    chatRoomId,
+  const response = await api.post(`/chats/room/${chatRoomId}/messages`, {
     content,
     mediaIds,
   });
-
   return response.data.data.message;
 };
 

@@ -1,5 +1,5 @@
 import { useSocket } from "@/api/socketRegistry";
-import type { ChatMessage, ChatMessageContentType } from "@/types/converstion";
+import type { ChatMessage, ChatMessageContentType } from "@/types/conversation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { conversationKeys, sortAscending } from "./useConversations";

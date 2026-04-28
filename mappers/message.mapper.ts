@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/types/converstion";
+import type { ChatMessage } from "@/types/conversation";
 import type { ChatMessageVM } from "@/view-models/message.vm";
 import { normalizeNullableString } from "./mapper.utils";
 

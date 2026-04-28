@@ -1,14 +1,14 @@
 import type {
-  ConversationDetail,
-  ConversationItem,
-} from "@/types/converstion";
-import type { ConversationListItemVM } from "@/view-models/conversation.vm";
+    ConversationDetail,
+    ConversationItem,
+} from "@/types/conversation";
 import type { ChatHeaderVM, GroupContextStripVM } from "@/view-models/chat.vm";
+import type { ConversationListItemVM } from "@/view-models/conversation.vm";
 import {
-  getFallbackLabel,
-  normalizeNullableString,
-  toSafeBoolean,
-  toSafeNumber,
+    getFallbackLabel,
+    normalizeNullableString,
+    toSafeBoolean,
+    toSafeNumber,
 } from "./mapper.utils";
 
 export function mapConversationItemToConversationListItemVM(
