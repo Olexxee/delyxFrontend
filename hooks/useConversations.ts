@@ -1,16 +1,16 @@
 import {
-    fetchConversationDetail,
-    fetchConversationMessages,
-    fetchInbox,
-    markConversationRead,
-    sendConversationMessage,
+  fetchConversationDetail,
+  fetchConversationMessages,
+  fetchInbox,
+  markConversationRead,
+  sendConversationMessage,
 } from "@/api/conversationService";
 import type { ChatMessage } from "@/types/conversation";
 import {
-    useInfiniteQuery,
-    useMutation,
-    useQuery,
-    useQueryClient,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -105,15 +105,19 @@ export const useSendConversationMessage = (
         createdAt: new Date().toISOString(),
         isMine: true,
       };
+
       queryClient.setQueryData(
         conversationKeys.messages(chatRoomId),
         (oldData: any) => {
-          if (!oldData) return oldData;
+          if (!oldData?.pages?.length) return oldData;
           return {
             ...oldData,
             pages: oldData.pages.map((page: any, index: number) =>
               index === 0
-                ? { ...page, messages: [optimisticMessage, ...page.messages] }
+                ? {
+                    ...page,
+                    messages: [optimisticMessage, ...(page.messages ?? [])],
+                  }
                 : page,
             ),
           };

@@ -38,10 +38,11 @@ export const fetchConversationMessages = async ({
 }): Promise<ConversationMessagesResponse> => {
   const response = await api.get<ApiEnvelope<ConversationMessagesResponse>>(
     `/chats/room/${chatRoomId}/messages`,
-    {
-      params: { before, limit },
-    },
+    { params: { before, limit } },
   );
+
+  console.log("raw response.data:", JSON.stringify(response.data, null, 2));
+  console.log("unwrapped:", JSON.stringify(response.data.data, null, 2));
 
   return response.data.data;
 };

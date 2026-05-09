@@ -1,7 +1,13 @@
 import { UserContext } from "@/authContext/UserContext";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Redirect, Tabs } from "expo-router";
-import { Home, MessageCircle, Trophy, User } from "lucide-react-native";
+import {
+  Home,
+  MessageCircle,
+  ShoppingBag,
+  Trophy,
+  User,
+} from "lucide-react-native";
 import React, { useContext, useEffect, useRef } from "react";
 import { Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,10 +49,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
 
   if (isRestoring) return null;
-
-  if (!user) {
-    return <Redirect href="/(auth)/authContainer" />;
-  }
+  if (!user) return <Redirect href="/(auth)/authContainer" />;
 
   return (
     <Tabs
@@ -93,6 +96,15 @@ export default function TabsLayout() {
                   inactiveColor={colors.textSecondary}
                 />
               );
+            case "mart":
+              return (
+                <AnimatedIcon
+                  Icon={ShoppingBag}
+                  focused={focused}
+                  activeColor={colors.accent}
+                  inactiveColor={colors.textSecondary}
+                />
+              );
             case "profile":
               return (
                 <AnimatedIcon
@@ -111,7 +123,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="feed" options={{ title: "Feed" }} />
       <Tabs.Screen name="chat" options={{ title: "Chats" }} />
       <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
+      <Tabs.Screen name="mart" options={{ title: "Mart" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+
+      {/* group folder exists for navigation but is not a visible tab */}
+      <Tabs.Screen name="group" options={{ href: null }} />
     </Tabs>
   );
 }

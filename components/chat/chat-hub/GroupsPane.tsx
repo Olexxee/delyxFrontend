@@ -20,11 +20,11 @@ export function GroupsPane({ items, isLoading, isError, onRetry }: Props) {
   const router = useRouter();
 
   const handleOpenGroup = (item: GroupListItemVM) => {
-    router.push({
-      pathname: "/(groups)/group-info",
-      params: { groupId: item.groupId },
-    });
-  };
+  router.push({
+    pathname: "/(tabs)/group/[groupId]/chat",
+    params: { groupId: item.groupId },
+  });
+};
 
   if (isLoading) {
     return (

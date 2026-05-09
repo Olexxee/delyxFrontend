@@ -20,11 +20,23 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
+const isMongoObjectId = (value?: string | null) => {
+  return !!value && /^[a-f\d]{24}$/i.test(value);
+};
+
 export default function ChatRoomScreen() {
   const router = useRouter();
-  const { chatRoomId } = useLocalSearchParams<{ chatRoomId: string }>();
+  const params = useLocalSearchParams<{ chatRoomId?: string | string[] }>();
   const { user } = useContext(UserContext);
+
   const [text, setText] = useState("");
+
+  const rawChatRoomId = Array.isArray(params.chatRoomId)
+    ? params.chatRoomId[0]
+    : params.chatRoomId;
+
+  const isValidChatRoomId = isMongoObjectId(rawChatRoomId);
+  const chatRoomId = isValidChatRoomId ? rawChatRoomId! : "";
 
   const { data: detail, isLoading: detailLoading } =
     useConversationDetail(chatRoomId);
@@ -37,10 +49,7 @@ export default function ChatRoomScreen() {
     isFetchingNextPage,
   } = useConversationMessages(chatRoomId);
 
-  const sendMutation = useSendConversationMessage(
-    chatRoomId || "",
-    user?.id || "",
-  );
+  const sendMutation = useSendConversationMessage(chatRoomId, user?.id || "");
 
   useMarkConversationRead(chatRoomId);
   useRealtimeConversation(chatRoomId, user?.id);
@@ -56,13 +65,17 @@ export default function ChatRoomScreen() {
   const messageVMs = useMemo(() => {
     return (
       messagesData?.pages.flatMap((page) =>
-        page.messages.map((message) => mapChatMessageToVM(message, user?.id)),
+        Array.isArray(page.messages)
+          ? page.messages.map((message) =>
+              mapChatMessageToVM(message, user?.id),
+            )
+          : [],
       ) || []
     );
   }, [messagesData, user?.id]);
-
   const handleSend = async () => {
     const value = text.trim();
+
     if (!value || !chatRoomId) return;
 
     setText("");
@@ -99,7 +112,15 @@ export default function ChatRoomScreen() {
     });
   };
 
-  if (!chatRoomId || detailLoading || messagesLoading) {
+  if (!isValidChatRoomId) {
+    return (
+      <View className="flex-1 items-center justify-center bg-black px-6">
+        <Text className="text-white text-base">Invalid conversation route</Text>
+      </View>
+    );
+  }
+
+  if (detailLoading || messagesLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-black">
         <ActivityIndicator />

@@ -43,7 +43,7 @@ export const fetchGroupHub = async (groupId: string): Promise<GroupHub> => {
 };
 
 export const getMyGroups = async (): Promise<MyGroupItem[]> => {
-  const { data } = await api.get<MyGroupsResponse>("/groups/me");
+  const { data } = await api.get<MyGroupsResponse>("/groups/my-groups");
   return data.data;
 };
 

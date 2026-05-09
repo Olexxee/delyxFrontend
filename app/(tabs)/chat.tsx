@@ -25,7 +25,6 @@ export default function ChatHubScreen() {
 
   const groupItems = useMemo(() => {
     const rawGroups = (groupsQuery.data as any)?.data || groupsQuery.data || [];
-
     return rawGroups.map(mapGroupListItemToVM);
   }, [groupsQuery.data]);
 
@@ -38,18 +37,13 @@ export default function ChatHubScreen() {
       </View>
 
       <View
-        style={[
-          styles.segmentWrap,
-          { backgroundColor: colors.surfaceLight },
-        ]}
+        style={[styles.segmentWrap, { backgroundColor: colors.surfaceLight }]}
       >
         <Pressable
           onPress={() => setActiveTab("chats")}
           style={[
             styles.segment,
-            activeTab === "chats" && {
-              backgroundColor: colors.surface,
-            },
+            activeTab === "chats" && { backgroundColor: colors.surface },
           ]}
         >
           <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
@@ -61,9 +55,7 @@ export default function ChatHubScreen() {
           onPress={() => setActiveTab("groups")}
           style={[
             styles.segment,
-            activeTab === "groups" && {
-              backgroundColor: colors.surface,
-            },
+            activeTab === "groups" && { backgroundColor: colors.surface },
           ]}
         >
           <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
@@ -94,9 +86,7 @@ export default function ChatHubScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -120,7 +110,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  body: {
-    flex: 1,
-  },
+  body: { flex: 1 },
 });
