@@ -4,7 +4,7 @@ import { Redirect, Tabs } from "expo-router";
 import {
   Home,
   MessageCircle,
-  ShoppingBag,
+  UsersRound,
   Trophy,
   User,
 } from "lucide-react-native";
@@ -96,10 +96,10 @@ export default function TabsLayout() {
                   inactiveColor={colors.textSecondary}
                 />
               );
-            case "mart":
+            case "communities":
               return (
                 <AnimatedIcon
-                  Icon={ShoppingBag}
+                  Icon={UsersRound}
                   focused={focused}
                   activeColor={colors.accent}
                   inactiveColor={colors.textSecondary}
@@ -123,7 +123,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="feed" options={{ title: "Feed" }} />
       <Tabs.Screen name="chat" options={{ title: "Chats" }} />
       <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
-      <Tabs.Screen name="mart" options={{ title: "Mart" }} />
+      <Tabs.Screen name="communities" options={{ title: "Community" }} />
+      <Tabs.Screen name="mart" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
 
       {/* group folder exists for navigation but is not a visible tab */}
