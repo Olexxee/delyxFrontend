@@ -10,7 +10,7 @@ This inventory is based on `Olexxee/newDelyx` on `master` (the backend's current
 | `profiles` | `src/modules/users`, `User` model | Partial | User repository/serializer exist, but no user/profile router is mounted |
 | `communities` | `src/modules/communities`; discovery, detail, create, join/leave, membership, members, role update, delete | Exposed | Mounted at `/api/community` (singular) |
 | `announcements` | `Announcement` model and community relation | Model only | No announcement endpoints/router are mounted on backend master |
-| `competitions` | `src/modules/competition`; CRUD and lifecycle | Exposed | Nested at `/api/community/:communityId/competitions`; types include LEAGUE, KNOCKOUT and SWISS |
+| `competitions` | `src/modules/competition`; CRUD and lifecycle | Exposed | Nested at `/api/community/:communityId/competitions`; first-release frontend supports LEAGUE and KNOCKOUT only (SWISS exists in backend schema but is out of launch scope) |
 | `registrations` | Competition registration lifecycle and participant model | Partial | Participant endpoints exist; approval/invite semantics are modeled, but verify exact API behavior before wiring |
 | `fixtures` | Competition fixture generation and fixture query | Exposed through competition router | Fixture generation is admin-only |
 | `matches` | Match/fixture models, result submission and verification | Exposed through competition router | Results are nested under competition. UI must keep pending/unverified results out of standings and stats |
