@@ -38,7 +38,7 @@ export default function CommunitiesScreen() {
     }
     setFormError("");
     try {
-      await create.mutateAsync({ name: name.trim(), description: description.trim() || undefined, visibility: "PUBLIC" });
+      await create.mutateAsync({ name: name.trim(), description: description.trim() || undefined });
       setName("");
       setDescription("");
       setShowCreate(false);
