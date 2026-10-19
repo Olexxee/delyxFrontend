@@ -5,7 +5,7 @@ export type FeatureDefinition = {
   label: string;
   backendModule: string;
   support: BackendSupport;
-  dependencies: string[];
+  dependencies: readonly string[];
   summary: string;
 };
 

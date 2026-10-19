@@ -3,8 +3,8 @@ export const matchesFeature = {
   basePath: "/api/community/:communityId/competitions/:competitionId",
   statuses: ["SCHEDULED", "SUBMITTED", "DISPUTED", "VERIFIED", "COMPLETED"],
   endpoints: {
-    submitResult: { method: "POST", path: "/:competitionId/results", memberOnly: true },
-    verifyResult: { method: "POST", path: "/:competitionId/results/verify", adminOnly: true },
+    submitResult: { method: "POST", path: "/results", memberOnly: true },
+    verifyResult: { method: "POST", path: "/results/verify", adminOnly: true },
   },
   invariants: [
     "A submitted score is pending until an authorized community administrator explicitly verifies it.",
