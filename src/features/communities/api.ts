@@ -28,9 +28,9 @@ export async function listCommunities(search = ""): Promise<Community[]> {
 export async function createCommunity(input: {
   name: string;
   description?: string;
-  visibility?: "PUBLIC" | "PRIVATE";
 }): Promise<Community> {
-  const { data } = await api.post<ApiEnvelope<Community>>("/api/community", input);
+  const { name, description } = input;
+  const { data } = await api.post<ApiEnvelope<Community>>("/api/community", { name, description });
   if (!data.success || !data.data) throw new Error(data.message || "Could not create community.");
   return data.data;
 }
