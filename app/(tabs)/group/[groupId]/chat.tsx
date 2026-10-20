@@ -14,7 +14,13 @@ import { mapConversationDetailToGroupContextStripVM } from "@/mappers/conversati
 import { mapChatMessageToVM } from "@/mappers/message.mapper";
 import { useRouter } from "expo-router";
 import { useContext, useMemo, useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function GroupChatScreen() {
@@ -26,7 +32,8 @@ export default function GroupChatScreen() {
 
   const chatRoomId = shell.chatRoomId;
 
-  const { data: detail, isLoading: detailLoading } = useConversationDetail(chatRoomId);
+  const { data: detail, isLoading: detailLoading } =
+    useConversationDetail(chatRoomId);
 
   const {
     data: messagesData,
@@ -50,7 +57,7 @@ export default function GroupChatScreen() {
       messagesData?.pages.flatMap((page) =>
         Array.isArray(page.messages)
           ? page.messages.map((msg) => mapChatMessageToVM(msg, user?.id))
-          : []
+          : [],
       ) || []
     );
   }, [messagesData, user?.id]);
@@ -68,15 +75,31 @@ export default function GroupChatScreen() {
 
   if (!chatRoomId) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#000" }}>
-        <Text style={{ color: "#666", fontSize: 14 }}>No chat room linked to this group</Text>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#000",
+        }}
+      >
+        <Text style={{ color: "#666", fontSize: 14 }}>
+          No chat room linked to this group
+        </Text>
       </View>
     );
   }
 
   if (detailLoading || messagesLoading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#000" }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#000",
+        }}
+      >
         <ActivityIndicator color="#fff" />
       </View>
     );
