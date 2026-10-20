@@ -1,5 +1,6 @@
 import React from "react";
-import { View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
   header: React.ReactNode;
@@ -14,12 +15,20 @@ export function ChatThreadLayout({
   messageList,
   composer,
 }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={{ flex: 1 }}>
-      {header}
-      {contextStrip}
-      <View style={{ flex: 1 }}>{messageList}</View>
-      {composer}
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
+    >
+      <View style={{ flex: 1 }}>
+        {header}
+        {contextStrip}
+        <View style={{ flex: 1 }}>{messageList}</View>
+        {composer}
+      </View>
+    </KeyboardAvoidingView>
   );
 }
