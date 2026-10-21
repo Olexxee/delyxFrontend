@@ -23,6 +23,7 @@ class ChatWebSocket implements RealtimeSocket {
   private handlers = new Map<string, Set<SocketHandler>>();
   private intentionalClose = false;
   private hasConnected = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly url: string, private readonly token: string) {
     this.connect();
@@ -65,6 +66,12 @@ class ChatWebSocket implements RealtimeSocket {
 
     ws.onclose = () => {
       this.dispatch("disconnect");
+      if (!this.intentionalClose && this.reconnectTimer === null) {
+        this.reconnectTimer = setTimeout(() => {
+          this.reconnectTimer = null;
+          if (!this.intentionalClose) this.connect();
+        }, 2000);
+      }
     };
   }
 
@@ -88,6 +95,10 @@ class ChatWebSocket implements RealtimeSocket {
 
   disconnect() {
     this.intentionalClose = true;
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.ws?.close();
     this.ws = null;
     this.handlers.clear();
