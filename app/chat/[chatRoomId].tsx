@@ -52,7 +52,7 @@ export default function ChatRoomScreen() {
   const sendMutation = useSendConversationMessage(chatRoomId, user?.id || "");
 
   useMarkConversationRead(chatRoomId);
-  useRealtimeConversation(chatRoomId, user?.id);
+  useRealtimeConversation(chatRoomId, user?.id, detail);
 
   const headerVM = useMemo(() => {
     return detail ? mapConversationDetailToChatHeaderVM(detail) : null;
