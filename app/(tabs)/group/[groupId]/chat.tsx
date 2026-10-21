@@ -23,6 +23,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+
+
 export default function GroupChatScreen() {
   const router = useRouter();
   const { shell } = useGroupShell();

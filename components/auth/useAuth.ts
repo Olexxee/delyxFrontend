@@ -12,37 +12,39 @@ export function useAuth() {
   const [error, setError] = useState("");
 
   /* ===================== LOGIN ===================== */
-  const login = async (
-    email: string,
-    password: string,
-    setUser: (user: User) => void
-  ) => {
-    if (!email || !password) {
-      setError("Email and password are required");
-      return;
-    }
+  
+const login = async (
+  identifier: string,
+  password: string,
+  setUser: (user: User) => void,
+) => {
+  if (!identifier.trim() || !password) {
+    setError("Email/username and password are required");
+    return;
+  }
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      const response = await loginUser({ email, password });
+  try {
+    const response = await loginUser({
+      identifier: identifier.trim(),
+      password,
+    });
 
-      await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
+    await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
 
-      const mappedUser = mapApiUser(response.user);
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mappedUser));
+    const mappedUser = mapApiUser(response.user);
+    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mappedUser));
 
-      // Set user in context → UserProvider will handle device token automatically
-      setUser(mappedUser);
-
-      router.replace("/(tabs)/feed");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setUser(mappedUser);
+    router.replace("/(tabs)/feed");
+  } catch (err: any) {
+    setError(err.message || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* ===================== REGISTER ===================== */
   const register = async (

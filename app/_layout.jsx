@@ -1,21 +1,23 @@
+import React, { useEffect } from "react";
 import { SocketProvider } from "@/api/socketRegistry";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import {
+  QueryClient,
+} from "@tanstack/react-query";
+import {
+  PersistQueryClientProvider,
+} from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-
 import { UserProvider } from "@/authContext/UserContext";
 
-// 1. Initialize Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 60 * 24, // Cache persists for 24 hours
-      staleTime: 1000 * 60 * 5,    // Data considered fresh for 5 minutes
+      gcTime: 1000 * 60 * 60 * 24,
+      staleTime: 1000 * 60 * 5,
     },
   },
 });
@@ -24,21 +26,20 @@ const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
 });
 
-persistQueryClient({
-  queryClient,
-  persister: asyncStoragePersister,
-});
-
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   useEffect(() => {
-    // You might want to hide this only after fonts/assets are loaded
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(() => {});
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: asyncStoragePersister,
+      }}
+    >
       <ThemeProvider>
         <UserProvider>
           <SocketProvider>
@@ -46,6 +47,6 @@ export default function RootLayout() {
           </SocketProvider>
         </UserProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

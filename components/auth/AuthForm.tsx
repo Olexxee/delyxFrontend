@@ -46,14 +46,10 @@ export function AuthForm({
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {type === "login"
-            ? "Sign in to your account"
-            : "Join Delyx today"}
+          {type === "login" ? "Sign in to your account" : "Join Delyx today"}
         </Text>
 
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {type === "register" && username !== undefined && setUsername && (
           <AppInput
@@ -66,12 +62,13 @@ export function AuthForm({
         )}
 
         <AppInput
-          placeholder="Email Address"
+          placeholder={type === "login" ? "Email or username" : "Email Address"}
           value={email}
           onChangeText={setEmail}
           icon="mail"
-          keyboardType="email-address"
+          keyboardType={type === "login" ? "default" : "email-address"}
           autoCapitalize="none"
+          autoCorrect={false}
           style={{ marginBottom: 16 }}
         />
 

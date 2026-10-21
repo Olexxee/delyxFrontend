@@ -5,7 +5,7 @@ import axios from "axios";
 // Set EXPO_PUBLIC_API_URL to the deployed backend origin (without /api suffix).
 // The backend mounts routes at /api/*, not /api/v1/*.
 export const API_BASE_URL = (
-  process.env.EXPO_PUBLIC_API_URL ?? "https://new-lapislazuli.outray.app"
+  process.env.EXPO_PUBLIC_API_URL ?? ""
 ).replace(/\/+$/, "");
 
 const api = axios.create({

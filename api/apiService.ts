@@ -31,7 +31,10 @@ export const registerUser = async (payload: RegisterPayload): Promise<AuthRespon
   // The backend creates the account but does not issue tokens from /register.
   await api.post("/api/auth/register", payload);
   // Sign in immediately after successful registration to establish the native session.
-  return loginUser({ email: payload.email, password: payload.password });
+  return loginUser({
+    identifier: payload.email,
+    password: payload.password,
+  });
 };
 
 /* ================= FEED ================= */
