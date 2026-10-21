@@ -12,19 +12,30 @@ type ApiEnvelope<T> = {
 };
 
 export const fetchInbox = async (): Promise<InboxResponse> => {
-  const response = await api.get<ApiEnvelope<InboxResponse>>(
-    "/conversations/inbox",
-  );
+  const response = await api.get<ApiEnvelope<InboxResponse>>("/api/chat/inbox");
   return response.data.data;
 };
 
 export const fetchConversationDetail = async (
   chatRoomId: string,
 ): Promise<ConversationDetail> => {
-  const response = await api.get<ApiEnvelope<ConversationDetail>>(
-    `/conversations/${chatRoomId}`,
-  );
-  return response.data.data;
+  const inbox = await fetchInbox();
+  const item = inbox.items.find((conversation) => conversation.chatRoomId === chatRoomId);
+  if (!item) {
+    throw new Error("Conversation not found. It may have no messages yet.");
+  }
+
+  return {
+    conversation: {
+      chatRoomId: item.chatRoomId,
+      type: item.type,
+      title: item.title,
+      avatarUrl: item.avatarUrl,
+      isMuted: item.isMuted,
+    },
+    ...(item.directMeta ? { directMeta: item.directMeta } : {}),
+    ...(item.groupMeta ? { groupMeta: item.groupMeta } : {}),
+  };
 };
 
 export const fetchConversationMessages = async ({
@@ -37,13 +48,9 @@ export const fetchConversationMessages = async ({
   limit?: number;
 }): Promise<ConversationMessagesResponse> => {
   const response = await api.get<ApiEnvelope<ConversationMessagesResponse>>(
-    `/chats/room/${chatRoomId}/messages`,
+    `/api/chat/conversations/${encodeURIComponent(chatRoomId)}/messages`,
     { params: { before, limit } },
   );
-
-  console.log("raw response.data:", JSON.stringify(response.data, null, 2));
-  console.log("unwrapped:", JSON.stringify(response.data.data, null, 2));
-
   return response.data.data;
 };
 
@@ -56,14 +63,16 @@ export const sendConversationMessage = async ({
   content: string;
   mediaIds?: string[];
 }) => {
-  const response = await api.post(`/chats/room/${chatRoomId}/messages`, {
-    content,
-    mediaIds,
-  });
+  const response = await api.post<ApiEnvelope<{ message: unknown }>>(
+    `/api/chat/conversations/${encodeURIComponent(chatRoomId)}/messages`,
+    { content, attachmentIds: mediaIds },
+  );
   return response.data.data.message;
 };
 
 export const markConversationRead = async (chatRoomId: string) => {
-  const response = await api.post(`/chats/room/${chatRoomId}/read`);
+  const response = await api.post(
+    `/api/chat/conversations/${encodeURIComponent(chatRoomId)}/read`,
+  );
   return response.data;
 };
