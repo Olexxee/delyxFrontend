@@ -96,7 +96,7 @@ export default function TabsLayout() {
                   inactiveColor={colors.textSecondary}
                 />
               );
-            case "communities":
+            case "communities/index":
               return (
                 <AnimatedIcon
                   Icon={UsersRound}
@@ -123,7 +123,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="feed" options={{ title: "Feed" }} />
       <Tabs.Screen name="chat" options={{ title: "Chats" }} />
       <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
-      <Tabs.Screen name="communities" options={{ title: "Community" }} />
+      <Tabs.Screen name="communities/index" options={{ title: "Community" }} />
       <Tabs.Screen name="mart" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
 
