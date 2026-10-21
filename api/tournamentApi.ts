@@ -126,7 +126,12 @@ export const joinTournament = async (
   const response = await api.post<ApiEnvelope<any>>(
     `/api/competitions/${encodeURIComponent(tournamentId)}/join`,
   );
-  return { success: true, message: response.data.message ?? "Joined competition", tournament: toApiTournament(response.data.data) as any };
+  const detail = await getTournamentById(tournamentId);
+  return {
+    success: true,
+    message: response.data.message ?? "Competition registration submitted",
+    tournament: detail.tournament as any,
+  };
 };
 
 export const leaveTournament = async (
