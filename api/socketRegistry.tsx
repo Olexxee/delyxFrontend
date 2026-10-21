@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/api/api";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
@@ -7,10 +8,97 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { io, Socket } from "socket.io-client";
+
+type SocketHandler = (payload?: any) => void;
+
+export interface RealtimeSocket {
+  on: (event: string, handler: SocketHandler) => RealtimeSocket;
+  off: (event: string, handler: SocketHandler) => RealtimeSocket;
+  emit: (event: string, payload?: Record<string, unknown>) => RealtimeSocket;
+  disconnect: () => void;
+}
+
+class ChatWebSocket implements RealtimeSocket {
+  private ws: WebSocket | null = null;
+  private handlers = new Map<string, Set<SocketHandler>>();
+  private intentionalClose = false;
+  private hasConnected = false;
+
+  constructor(private readonly url: string, private readonly token: string) {
+    this.connect();
+  }
+
+  private dispatch(event: string, payload?: any) {
+    this.handlers.get(event)?.forEach((handler) => handler(payload));
+  }
+
+  private connect() {
+    this.intentionalClose = false;
+    const ws = new WebSocket(this.url);
+    this.ws = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "auth", token: this.token }));
+      this.dispatch(this.hasConnected ? "reconnect" : "connect");
+      this.hasConnected = true;
+    };
+
+    ws.onmessage = (message) => {
+      try {
+        const event = JSON.parse(String(message.data));
+        if (event?.type === "error") {
+          this.dispatch("error", event);
+          return;
+        }
+        this.dispatch(event?.type, event);
+        this.dispatch("message", event);
+      } catch {
+        this.dispatch("error", { message: "Received an invalid WebSocket event." });
+      }
+    };
+
+    ws.onerror = () => {
+      this.dispatch("error", { message: "Chat connection failed." });
+    };
+
+    ws.onclose = () => {
+      this.dispatch("disconnect");
+    };
+  }
+
+  on(event: string, handler: SocketHandler) {
+    if (!this.handlers.has(event)) this.handlers.set(event, new Set());
+    this.handlers.get(event)!.add(handler);
+    return this;
+  }
+
+  off(event: string, handler: SocketHandler) {
+    this.handlers.get(event)?.delete(handler);
+    return this;
+  }
+
+  emit(event: string, payload: Record<string, unknown> = {}) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: event, ...payload }));
+    }
+    return this;
+  }
+
+  disconnect() {
+    this.intentionalClose = true;
+    this.ws?.close();
+    this.ws = null;
+    this.handlers.clear();
+  }
+}
+
+const getWebSocketUrl = () => {
+  const apiOrigin = (API_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+  return apiOrigin.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:") + "/ws/chat";
+};
 
 export interface SocketContextValue {
-  socket: Socket | null;
+  socket: RealtimeSocket | null;
   isConnected: boolean;
   refreshSocket: () => Promise<void>;
 }
@@ -24,52 +112,42 @@ export interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-  const socketRef = useRef<Socket | null>(null);
-
+  const socketRef = useRef<ChatWebSocket | null>(null);
+  const [socket, setSocket] = useState<RealtimeSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  /* -----------------------------
-       Initialize or refresh socket
-    ----------------------------- */
   const initSocket = useCallback(async (): Promise<void> => {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-    if (!token) return;
+    if (!token) {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
 
     socketRef.current?.disconnect();
+    setIsConnected(false);
 
-    const newSocket = io("https://new-lapislazuli.outray.app", {
-      auth: { token },
-      transports: ["polling", "websocket"],
-      autoConnect: true,
-    });
-
-    newSocket.on("connect", () => setIsConnected(true));
-    newSocket.on("disconnect", () => setIsConnected(false));
-
-    socketRef.current = newSocket;
+    const nextSocket = new ChatWebSocket(getWebSocketUrl(), token);
+    nextSocket.on("connect", () => setIsConnected(true));
+    nextSocket.on("reconnect", () => setIsConnected(true));
+    nextSocket.on("disconnect", () => setIsConnected(false));
+    socketRef.current = nextSocket;
+    setSocket(nextSocket);
   }, []);
 
-  /* -----------------------------
-       Init socket on mount
-    ----------------------------- */
   useEffect(() => {
     void initSocket();
-
     return () => {
       socketRef.current?.disconnect();
+      socketRef.current = null;
     };
   }, [initSocket]);
 
-  /* -----------------------------
-       Context value (socket is stable)
-    ----------------------------- */
-  const contextValue = React.useMemo<SocketContextValue>(
-    () => ({
-      socket: socketRef.current,
-      isConnected,
-      refreshSocket: initSocket,
-    }),
-    [isConnected, initSocket],
+  const contextValue = React.useMemo(
+    () => ({ socket, isConnected, refreshSocket: initSocket }),
+    [socket, isConnected, initSocket],
   );
 
   return (
@@ -79,9 +157,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   );
 };
 
-/* -----------------------------
-   Custom hook for consuming
------------------------------ */
 export const useSocket = (): SocketContextValue => {
   const ctx = React.useContext(SocketContext);
   if (!ctx) throw new Error("useSocket must be used within SocketProvider");
