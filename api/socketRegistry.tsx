@@ -39,8 +39,6 @@ class ChatWebSocket implements RealtimeSocket {
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: "auth", token: this.token }));
-      this.dispatch(this.hasConnected ? "reconnect" : "connect");
-      this.hasConnected = true;
     };
 
     ws.onmessage = (message) => {
@@ -49,6 +47,10 @@ class ChatWebSocket implements RealtimeSocket {
         if (event?.type === "error") {
           this.dispatch("error", event);
           return;
+        }
+        if (event?.type === "authenticated") {
+          this.dispatch(this.hasConnected ? "reconnect" : "connect", event);
+          this.hasConnected = true;
         }
         this.dispatch(event?.type, event);
         this.dispatch("message", event);
