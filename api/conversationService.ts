@@ -47,11 +47,35 @@ export const fetchConversationMessages = async ({
   before?: string;
   limit?: number;
 }): Promise<ConversationMessagesResponse> => {
-  const response = await api.get<ApiEnvelope<ConversationMessagesResponse>>(
+  const response = await api.get<ApiEnvelope<any>>(
     `/api/chat/conversations/${encodeURIComponent(chatRoomId)}/messages`,
     { params: { before, limit } },
   );
-  return response.data.data;
+  const payload = response.data.data;
+  const messages = (payload.messages ?? []).map((message: any) => {
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    return {
+      id: message.id,
+      chatRoomId,
+      kind: "user" as const,
+      contentType: attachments.length ? (message.content ? "mixed" as const : "media" as const) : "text" as const,
+      content: message.content ?? "",
+      createdAt: message.createdAt,
+      media: attachments.map((attachment: any) => attachment.url).filter(Boolean),
+      sender: message.sender
+        ? {
+            id: message.sender.id,
+            username: message.sender.username,
+            profilePicture: message.sender.avatar ?? null,
+          }
+        : null,
+    };
+  });
+  return {
+    messages,
+    count: payload.count ?? messages.length,
+    hasMore: Boolean(payload.hasMore),
+  };
 };
 
 export const sendConversationMessage = async ({
