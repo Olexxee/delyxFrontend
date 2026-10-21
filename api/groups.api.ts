@@ -60,12 +60,17 @@ export const getDiscoverGroups = async (page: number, search: string) => {
 };
 
 export const fetchGroupHub = async (groupId: string): Promise<GroupHub> => {
-  const { data } = await api.get<ApiEnvelope<CommunityRecord>>(
-    `/api/community/${encodeURIComponent(groupId)}?includeMembers=true`,
-  );
-  const community = data.data;
+  const [communityResponse, membershipResponse] = await Promise.all([
+    api.get<ApiEnvelope<CommunityRecord>>(
+      `/api/community/${encodeURIComponent(groupId)}?includeMembers=true`,
+    ),
+    api.get<ApiEnvelope<{ isMember: boolean; role: string | null }>>(
+      `/api/community/${encodeURIComponent(groupId)}/membership`,
+    ),
+  ]);
+  const community = communityResponse.data.data;
   const members = community.members ?? [];
-  const currentRole = role(community.userRole) ?? "member";
+  const currentRole = role(membershipResponse.data.data.role) ?? "member";
   return {
     group: {
       id: community.id,
