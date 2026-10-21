@@ -1,9 +1,11 @@
 import { API_BASE_URL } from "@/api/api";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "@/authContext/UserContext";
 import React, {
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -125,6 +127,7 @@ export interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+  const { user } = useContext(UserContext);
   const socketRef = useRef<ChatWebSocket | null>(null);
   const [socket, setSocket] = useState<RealtimeSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -151,12 +154,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    void initSocket();
+    if (user?.id) {
+      void initSocket();
+    } else {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+      setIsConnected(false);
+    }
+
     return () => {
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, [initSocket]);
+  }, [initSocket, user?.id]);
 
   const contextValue = React.useMemo(
     () => ({ socket, isConnected, refreshSocket: initSocket }),
