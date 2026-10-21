@@ -5,12 +5,12 @@ export const getHomeFeed = async (
   tab: HomeFeedTab,
   cursor?: string | null,
 ): Promise<HomeFeedResponse> => {
-  const { data } = await api.get("/api/feed/home", {
+  const { data } = await api.get<{ success: boolean; data: HomeFeedResponse }>("/api/feed/home", {
     params: {
       tab,
       cursor: cursor ?? undefined,
     },
   });
 
-  return data;
+  return data.data;
 };
