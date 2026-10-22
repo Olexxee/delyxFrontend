@@ -46,7 +46,7 @@ export default function ChatHubScreen() {
             activeTab === "chats" && { backgroundColor: colors.accent },
           ]}
         >
-          <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
+          <Text style={{ color: activeTab === "chats" ? colors.background : colors.textSecondary, fontWeight: "800" }}>
             Chats
           </Text>
         </Pressable>
@@ -58,7 +58,7 @@ export default function ChatHubScreen() {
             activeTab === "groups" && { backgroundColor: colors.accent },
           ]}
         >
-          <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
+          <Text style={{ color: activeTab === "groups" ? colors.background : colors.textSecondary, fontWeight: "800" }}>
             Groups
           </Text>
         </Pressable>
