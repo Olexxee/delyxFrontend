@@ -89,9 +89,9 @@ export default function CommunitiesScreen() {
             <Text style={[styles.title, { color: colors.textPrimary }]}>Communities</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Find your people. Compete together.</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Create community" onPress={() => setShowCreate(true)} style={[styles.createButton, { backgroundColor: colors.primary }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Create community" onPress={() => setShowCreate(true)} style={[styles.createButton, { backgroundColor: colors.accent }]}>
             <Plus size={18} color="#fff" />
-            <Text style={styles.createButtonText}>Create</Text>
+            <Text style={styles.createButtonTextAccent}>Create</Text>
           </Pressable>
         </View>
         <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, lineHeight: 19, marginTop: 4 },
   createButton: { borderRadius: 12, paddingHorizontal: 13, paddingVertical: 11, flexDirection: "row", alignItems: "center", gap: 6 },
   createButtonText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  createButtonTextAccent: { color: "#090D18", fontSize: 13, fontWeight: "900" },
   searchBox: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", gap: 10 },
   searchInput: { flex: 1, minHeight: 44, fontSize: 15 },
   list: { paddingHorizontal: 16, gap: 11 },
