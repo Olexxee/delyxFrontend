@@ -5,6 +5,7 @@ import { Search, UsersRound, Plus, X, ChevronRight, ImagePlus } from "lucide-rea
 import React, { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "react-native";
+import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
 import {
   ActivityIndicator,
@@ -22,6 +23,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CommunitiesScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
@@ -128,19 +130,29 @@ export default function CommunitiesScreen() {
             const isJoining = join.isPending && join.variables === item.id;
             return (
               <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}>{item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.communityImage} /> : <UsersRound size={22} color={colors.primary} />}</View>
-                <View style={styles.communityBody}>
-                  <Text style={[styles.communityName, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
-                  <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>{item.description || "A place to connect, organize competitions, and play together."}</Text>
-                  <Text style={[styles.meta, { color: colors.textSecondary }]}>{typeof memberCount === "number" ? `${memberCount} members` : "Community"}{item.visibility === "PRIVATE" ? " · Private" : " · Public"}</Text>
-                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={item.isMember ? `Open ${item.name}` : `${item.name} community details`}
+                  disabled={!item.isMember}
+                  onPress={() => router.push({ pathname: "/(tabs)/group/[groupId]/chat", params: { groupId: item.id } })}
+                  style={styles.communityPressable}
+                >
+                  <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}>{item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.communityImage} /> : <UsersRound size={22} color={colors.primary} />}</View>
+                  <View style={styles.communityBody}>
+                    <Text style={[styles.communityName, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>{item.description || "A place to connect, organize competitions, and play together."}</Text>
+                    <Text style={[styles.meta, { color: colors.textSecondary }]}>{typeof memberCount === "number" ? `${memberCount} members` : "Community"}{item.visibility === "PRIVATE" ? " · Private" : " · Public"}</Text>
+                  </View>
+                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isJoining}
-                  onPress={() => join.mutate(item.id)}
+                  onPress={() => item.isMember
+                    ? router.push({ pathname: "/(tabs)/group/[groupId]/chat", params: { groupId: item.id } })
+                    : join.mutate(item.id)}
                   style={[styles.joinButton, { borderColor: colors.primary }]}
                 >
-                  {isJoining ? <ActivityIndicator size="small" color={colors.primary} /> : <><Text style={[styles.joinText, { color: colors.primary }]}>Join</Text><ChevronRight size={15} color={colors.primary} /></>}
+                  {isJoining ? <ActivityIndicator size="small" color={colors.primary} /> : <><Text style={[styles.joinText, { color: colors.primary }]}>{item.isMember ? "Open" : "Join"}</Text><ChevronRight size={15} color={colors.primary} /></>}
                 </Pressable>
               </View>
             );
@@ -189,6 +201,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, minHeight: 44, fontSize: 15 },
   list: { paddingHorizontal: 16, gap: 11 },
   card: { borderRadius: 17, borderWidth: 1, padding: 14, flexDirection: "row", alignItems: "center", gap: 11 },
+  communityPressable: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 11 },
   communityIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   communityImage: { width: "100%", height: "100%" },
   imagePreview: { width: "100%", height: 170, borderRadius: 12, resizeMode: "cover" },
