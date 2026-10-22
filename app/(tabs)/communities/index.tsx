@@ -1,8 +1,11 @@
 import { useCommunities, useCreateCommunity, useJoinCommunity } from "@/hooks/useCommunities";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Search, UsersRound, Plus, X, ChevronRight } from "lucide-react-native";
+import { Search, UsersRound, Plus, X, ChevronRight, ImagePlus } from "lucide-react-native";
 import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "react-native";
+import { uploadMedia } from "@/src/features/media/api";
 import {
   ActivityIndicator,
   FlatList,
@@ -26,10 +29,29 @@ export default function CommunitiesScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [communityImage, setCommunityImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [formError, setFormError] = useState("");
   const communities = useCommunities(debouncedSearch);
   const create = useCreateCommunity();
   const join = useJoinCommunity();
+
+  const chooseCommunityImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setFormError("Allow photo library access to choose a community image.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCommunityImage(result.assets[0]);
+      setFormError("");
+    }
+  };
 
   const submitCreate = async () => {
     if (name.trim().length < 3) {
@@ -38,9 +60,19 @@ export default function CommunitiesScreen() {
     }
     setFormError("");
     try {
-      await create.mutateAsync({ name: name.trim(), description: description.trim() || undefined });
+      let imageUrl: string | undefined;
+      if (communityImage) {
+        const uploaded = await uploadMedia(communityImage, "COMMUNITY_IMAGE");
+        imageUrl = uploaded.secureUrl;
+      }
+      await create.mutateAsync({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        image: imageUrl,
+      });
       setName("");
       setDescription("");
+      setCommunityImage(null);
       setShowCreate(false);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Could not create community.");
@@ -96,7 +128,7 @@ export default function CommunitiesScreen() {
             const isJoining = join.isPending && join.variables === item.id;
             return (
               <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}><UsersRound size={22} color={colors.primary} /></View>
+                <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}>{item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.communityImage} /> : <UsersRound size={22} color={colors.primary} />}</View>
                 <View style={styles.communityBody}>
                   <Text style={[styles.communityName, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>{item.description || "A place to connect, organize competitions, and play together."}</Text>
@@ -123,6 +155,13 @@ export default function CommunitiesScreen() {
             <Pressable onPress={() => setShowCreate(false)} accessibilityLabel="Close create community form"><X size={22} color={colors.textPrimary} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"} automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Community image (optional)</Text>
+            {communityImage ? <Image source={{ uri: communityImage.uri }} style={styles.imagePreview} /> : null}
+            <Pressable onPress={chooseCommunityImage} style={[styles.imagePicker, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <ImagePlus size={18} color={colors.primary} />
+              <Text style={[styles.imagePickerText, { color: colors.textPrimary }]}>{communityImage ? "Change image" : "Choose an image"}</Text>
+            </Pressable>
+            {communityImage ? <Pressable onPress={() => setCommunityImage(null)} accessibilityRole="button"><Text style={styles.removeImage}>Remove image</Text></Pressable> : null}
             <Text style={[styles.label, { color: colors.textPrimary }]}>Community name</Text>
             <TextInput value={name} onChangeText={setName} placeholder="e.g. Lagos Weekend League" placeholderTextColor={colors.textSecondary} maxLength={60} returnKeyType="next" style={[styles.field, { color: colors.textPrimary, backgroundColor: colors.surface, borderColor: colors.border }]} />
             <Text style={[styles.label, { color: colors.textPrimary }]}>Description (optional)</Text>
@@ -150,7 +189,12 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, minHeight: 44, fontSize: 15 },
   list: { paddingHorizontal: 16, gap: 11 },
   card: { borderRadius: 17, borderWidth: 1, padding: 14, flexDirection: "row", alignItems: "center", gap: 11 },
-  communityIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  communityIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  communityImage: { width: "100%", height: "100%" },
+  imagePreview: { width: "100%", height: 170, borderRadius: 12, resizeMode: "cover" },
+  imagePicker: { minHeight: 46, borderWidth: 1, borderRadius: 12, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", gap: 9 },
+  imagePickerText: { fontSize: 14, fontWeight: "600" },
+  removeImage: { color: "#dc2626", fontSize: 12, fontWeight: "600", textAlign: "right", marginTop: -4 },
   communityBody: { flex: 1, gap: 3 },
   communityName: { fontSize: 15, fontWeight: "800" },
   description: { fontSize: 12, lineHeight: 17 },
