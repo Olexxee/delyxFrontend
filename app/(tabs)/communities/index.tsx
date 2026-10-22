@@ -86,6 +86,7 @@ export default function CommunitiesScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
+            <Text style={[styles.eyebrow, { color: colors.accent }]}>YOUR SQUAD STARTS HERE</Text>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Communities</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Find your people. Compete together.</Text>
           </View>
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 14, gap: 16 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  title: { fontSize: 25, fontWeight: "800" },
+  eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.5, marginBottom: 3 },\n  title: { fontSize: 28, fontWeight: "900", letterSpacing: -0.5 },
   subtitle: { fontSize: 13, lineHeight: 19, marginTop: 4 },
   createButton: { borderRadius: 12, paddingHorizontal: 13, paddingVertical: 11, flexDirection: "row", alignItems: "center", gap: 6 },
   createButtonText: { color: "#fff", fontSize: 13, fontWeight: "700" },
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   searchBox: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", gap: 10 },
   searchInput: { flex: 1, minHeight: 44, fontSize: 15 },
   list: { paddingHorizontal: 16, gap: 11 },
-  card: { borderRadius: 17, borderWidth: 1, padding: 14, flexDirection: "row", alignItems: "center", gap: 11 },
+  card: { borderRadius: 20, borderWidth: 1, padding: 15, flexDirection: "row", alignItems: "center", gap: 12 },
   communityPressable: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 11 },
   communityIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   communityImage: { width: "100%", height: "100%" },
