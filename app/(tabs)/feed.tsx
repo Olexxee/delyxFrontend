@@ -1,4 +1,5 @@
 import { FeedCardRenderer } from "@/components/feed/FeedCardRenderer";
+import { Flame, Zap } from "lucide-react-native";
 import { FeedHeroBanner } from "@/components/feed/FeedHeroBanner";
 import { PriorityActionRail } from "@/components/feed/PriorityActionRail";
 import { useHomeFeed } from "@/hooks/useHomeFeed";
@@ -44,9 +45,19 @@ export default function HomeScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          Delyx
-        </Text>
+        <View style={styles.brandRow}>
+          <View style={[styles.brandMark, { backgroundColor: colors.accent }]}>
+            <Zap size={19} color={colors.background} fill={colors.background} />
+          </View>
+          <View style={styles.brandCopy}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>DELYX</Text>
+            <Text style={[styles.headerEyebrow, { color: colors.textSecondary }]}>PLAY • CONNECT • COMPETE</Text>
+          </View>
+          <View style={[styles.statusPill, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
+            <Flame size={13} color={colors.accent} />
+            <Text style={[styles.statusText, { color: colors.accent }]}>ARENA</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.tabsRow}>
@@ -60,7 +71,7 @@ export default function HomeScreen() {
               style={[
                 styles.tabBtn,
                 {
-                  backgroundColor: active ? colors.primary : colors.surface,
+                  backgroundColor: active ? colors.accent : colors.surface,
                   borderColor: colors.border,
                 },
               ]}
@@ -68,7 +79,7 @@ export default function HomeScreen() {
               <Text
                 style={[
                   styles.tabText,
-                  { color: active ? "#fff" : colors.textSecondary },
+                  { color: active ? colors.background : colors.textSecondary },
                 ]}
               >
                 {item === "for-you"
@@ -134,7 +145,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   tabBtn: {
     paddingHorizontal: 14,
