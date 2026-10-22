@@ -48,7 +48,7 @@ export default function GroupChatScreen() {
   const sendMutation = useSendConversationMessage(chatRoomId, user?.id || "");
 
   useMarkConversationRead(chatRoomId);
-  useRealtimeConversation(chatRoomId, user?.id);
+  useRealtimeConversation(chatRoomId, user?.id, detail);
 
   const groupContextVM = useMemo(() => {
     return detail ? mapConversationDetailToGroupContextStripVM(detail) : null;

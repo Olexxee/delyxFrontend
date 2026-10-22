@@ -1,5 +1,9 @@
 import { useSocket } from "@/api/socketRegistry";
-import type { ChatMessage, ChatMessageContentType } from "@/types/conversation";
+import type {
+  ChatMessage,
+  ChatMessageContentType,
+  ConversationDetail,
+} from "@/types/conversation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { conversationKeys, sortAscending } from "./useConversations";
@@ -7,15 +11,20 @@ import { conversationKeys, sortAscending } from "./useConversations";
 type IncomingBackendMessage = {
   id?: string;
   _id?: string;
-  chatRoomId: string;
+  chatRoomId?: string;
+  communityId?: string;
+  senderId?: string;
+  receiverId?: string | null;
   sender?: {
     id?: string;
     _id?: string;
     username?: string;
+    avatar?: string | null;
     profilePicture?: string | null;
   } | null;
   content?: string;
   media?: string[];
+  attachments?: Array<{ url?: string }>;
   messageType?: "text" | "media" | "mixed" | "system";
   meta?: Record<string, unknown> | null;
   createdAt?: string | Date;
@@ -24,10 +33,11 @@ type IncomingBackendMessage = {
 const normaliseIncomingMessage = (
   msg: IncomingBackendMessage,
   userId: string,
+  chatRoomId: string,
 ): ChatMessage => {
-  const senderId = msg.sender?.id ?? msg.sender?._id ?? "unknown";
-  const rawType = msg.messageType ?? "text";
-
+  const senderId = msg.sender?.id ?? msg.sender?._id ?? msg.senderId ?? "unknown";
+  const media = msg.media ?? (msg.attachments ?? []).map((item) => item.url).filter((url): url is string => Boolean(url));
+  const rawType = msg.messageType ?? (media.length ? (msg.content ? "mixed" : "media") : "text");
   const kind = rawType === "system" ? "system" : "user";
   const contentType: ChatMessageContentType | undefined =
     rawType === "text" || rawType === "media" || rawType === "mixed"
@@ -36,19 +46,19 @@ const normaliseIncomingMessage = (
 
   return {
     id: msg.id ?? msg._id ?? `temp-${Date.now()}`,
-    chatRoomId: msg.chatRoomId,
+    chatRoomId,
     kind,
     contentType,
     sender: msg.sender
       ? {
           id: senderId,
           username: msg.sender.username ?? "Unknown",
-          profilePicture: msg.sender.profilePicture ?? null,
+          profilePicture: msg.sender.profilePicture ?? msg.sender.avatar ?? null,
         }
-      : null,
+      : { id: senderId, username: "Unknown", profilePicture: null },
     content: msg.content ?? "",
-    media: msg.media ?? [],
-    meta: msg.meta ?? null,
+    media,
+    meta: (msg.meta as ChatMessage["meta"]) ?? null,
     createdAt: msg.createdAt
       ? new Date(msg.createdAt).toISOString()
       : new Date().toISOString(),
@@ -56,7 +66,11 @@ const normaliseIncomingMessage = (
   };
 };
 
-export function useRealtimeConversation(chatRoomId?: string, userId?: string) {
+export function useRealtimeConversation(
+  chatRoomId?: string,
+  userId?: string,
+  detail?: ConversationDetail,
+) {
   const { socket, isConnected } = useSocket();
   const queryClient = useQueryClient();
   const userIdRef = useRef(userId);
@@ -65,45 +79,52 @@ export function useRealtimeConversation(chatRoomId?: string, userId?: string) {
     userIdRef.current = userId;
   }, [userId]);
 
-  const handleIncomingMessage = useCallback(
-    (msg: IncomingBackendMessage) => {
-      if (!chatRoomId || !userIdRef.current) return;
-      if (msg.chatRoomId !== chatRoomId) return;
+  const handleIncomingEvent = useCallback(
+    (event: any) => {
+      if (!chatRoomId || !userIdRef.current || event?.type !== "message:new") return;
+      if (detail?.conversation.type === "group") {
+        if (event.scope !== "community" || event.communityId !== (detail.groupMeta?.groupId ?? chatRoomId)) return;
+      } else if (detail?.conversation.type === "direct") {
+        const otherUserId = detail.directMeta?.userId;
+        const message = event.message as IncomingBackendMessage | undefined;
+        if (
+          event.scope !== "direct" ||
+          !message ||
+          !otherUserId ||
+          ![message.senderId, message.receiverId].includes(otherUserId)
+        ) return;
+      } else {
+        return;
+      }
 
-      const newMsg = normaliseIncomingMessage(msg, userIdRef.current);
+      const rawMessage = event.message as IncomingBackendMessage | undefined;
+      if (!rawMessage) return;
+      const newMsg = normaliseIncomingMessage(
+        rawMessage,
+        userIdRef.current,
+        chatRoomId,
+      );
 
       queryClient.setQueryData(
         conversationKeys.messages(chatRoomId),
         (old: any) => {
           if (!old?.pages?.length) {
             return {
-              pages: [
-                {
-                  messages: [newMsg],
-                  count: 1,
-                  hasMore: false,
-                },
-              ],
+              pages: [{ messages: [newMsg], count: 1, hasMore: false }],
               pageParams: [undefined],
             };
           }
 
           const firstPage = old.pages[0];
           const safeMessages = firstPage.messages ?? [];
-
-          const withoutTemp = safeMessages.filter((m: ChatMessage) => {
-            if (m.id === newMsg.id) return false;
-
-            if (
-              m.id.startsWith("temp-") &&
-              m.isMine &&
+          const withoutDuplicate = safeMessages.filter((message: ChatMessage) => {
+            if (message.id === newMsg.id) return false;
+            return !(
+              message.id.startsWith("temp-") &&
+              message.isMine &&
               newMsg.isMine &&
-              m.content === newMsg.content
-            ) {
-              return false;
-            }
-
-            return true;
+              message.content === newMsg.content
+            );
           });
 
           return {
@@ -111,7 +132,7 @@ export function useRealtimeConversation(chatRoomId?: string, userId?: string) {
             pages: [
               {
                 ...firstPage,
-                messages: [...withoutTemp, newMsg].sort(sortAscending),
+                messages: [...withoutDuplicate, newMsg].sort(sortAscending),
               },
               ...old.pages.slice(1),
             ],
@@ -119,32 +140,32 @@ export function useRealtimeConversation(chatRoomId?: string, userId?: string) {
         },
       );
 
-      queryClient.invalidateQueries({
-        queryKey: conversationKeys.inbox(),
-      });
+      queryClient.invalidateQueries({ queryKey: conversationKeys.inbox() });
     },
-    [chatRoomId, queryClient],
+    [chatRoomId, detail, queryClient],
   );
 
   useEffect(() => {
-    if (!socket || !chatRoomId) return;
+    if (!socket || !chatRoomId || !detail) return;
 
-    const joinRoom = () => socket.emit("chat:join", { chatRoomId });
-    const leaveRoom = () => socket.emit("chat:leave", { chatRoomId });
+    const subscribe = () => {
+      if (detail.conversation.type === "group") {
+        const communityId = detail.groupMeta?.groupId ?? chatRoomId;
+        socket.emit("subscribe:community", { communityId });
+      } else if (detail.directMeta?.userId) {
+        socket.emit("subscribe:direct", { userId: detail.directMeta.userId });
+      }
+    };
 
-    if (isConnected) joinRoom();
-
-    socket.on("connect", joinRoom);
-    socket.on("reconnect", joinRoom);
-    socket.on("disconnect", leaveRoom);
-    socket.on("chat:new_message", handleIncomingMessage);
+    if (isConnected) subscribe();
+    socket.on("connect", subscribe);
+    socket.on("reconnect", subscribe);
+    socket.on("message:new", handleIncomingEvent);
 
     return () => {
-      socket.off("connect", joinRoom);
-      socket.off("reconnect", joinRoom);
-      socket.off("disconnect", leaveRoom);
-      socket.off("chat:new_message", handleIncomingMessage);
-      leaveRoom();
+      socket.off("connect", subscribe);
+      socket.off("reconnect", subscribe);
+      socket.off("message:new", handleIncomingEvent);
     };
-  }, [socket, chatRoomId, isConnected, handleIncomingMessage]);
+  }, [socket, chatRoomId, detail, isConnected, handleIncomingEvent]);
 }

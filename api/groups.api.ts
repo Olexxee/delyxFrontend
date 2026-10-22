@@ -1,7 +1,4 @@
-import type {
-  GroupOverview,
-  MyGroupItem,
-} from "@/types/group";
+import type { GroupOverview, MyGroupItem } from "@/types/group";
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
 import type { GroupHub } from "@/types/groupHub";
@@ -15,12 +12,21 @@ type CommunityRecord = {
   memberCount?: number;
   isMember?: boolean;
   userRole?: string | null;
-  members?: Array<{ id: string; username?: string; avatar?: string | null; role?: string }>;
+  members?: Array<{
+    id: string;
+    username?: string;
+    avatar?: string | null;
+    role?: string;
+  }>;
 };
 
 const role = (value?: string | null): "owner" | "admin" | "member" | null => {
   const normalized = value?.toLowerCase();
-  return normalized === "owner" || normalized === "admin" || normalized === "member" ? normalized : null;
+  return normalized === "owner" ||
+    normalized === "admin" ||
+    normalized === "member"
+    ? normalized
+    : null;
 };
 
 const asGroupOverview = (community: CommunityRecord): GroupOverview => ({
@@ -37,10 +43,18 @@ const asGroupOverview = (community: CommunityRecord): GroupOverview => ({
 });
 
 const fetchCommunityList = async (search = ""): Promise<CommunityRecord[]> => {
-  const { data } = await api.get<ApiEnvelope<{ data: CommunityRecord[]; pagination?: { total: number; limit: number; offset: number } }>>(
-    "/api/community",
-    { params: { limit: 50, offset: 0, ...(search.trim() ? { search: search.trim() } : {}) } },
-  );
+  const { data } = await api.get<
+    ApiEnvelope<{
+      data: CommunityRecord[];
+      pagination?: { total: number; limit: number; offset: number };
+    }>
+  >("/api/community", {
+    params: {
+      limit: 50,
+      offset: 0,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    },
+  });
   if (Array.isArray(data.data)) return data.data;
   return data.data?.data ?? [];
 };
@@ -99,7 +113,9 @@ export const fetchGroupHub = async (groupId: string): Promise<GroupHub> => {
 };
 
 export const getMyGroups = async (): Promise<MyGroupItem[]> => {
-  const { data } = await api.get<ApiEnvelope<MyGroupItem[]>>("/api/community/mine");
+  const { data } = await api.get<ApiEnvelope<MyGroupItem[]>>(
+    "/api/community/mine",
+  );
   return data.data;
 };
 
@@ -108,12 +124,13 @@ const searchGroupsByName = async (name: string): Promise<GroupOverview[]> => {
   return (await fetchCommunityList(name)).map(asGroupOverview);
 };
 
-export const useSearchGroups = (search: string) => useQuery({
-  queryKey: ["searchGroups", search],
-  queryFn: () => searchGroupsByName(search),
-  enabled: search.trim().length > 0,
-  staleTime: 1000 * 30,
-});
+export const useSearchGroups = (search: string) =>
+  useQuery({
+    queryKey: ["searchGroups", search],
+    queryFn: () => searchGroupsByName(search),
+    enabled: search.trim().length > 0,
+    staleTime: 1000 * 30,
+  });
 
 export function useGroupInfo(groupId?: string) {
   return useQuery({
