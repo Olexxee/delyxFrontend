@@ -58,14 +58,22 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64 + insets.bottom,
-          paddingBottom: insets.bottom,
+          borderTopWidth: 1,
+          height: 70 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
+          elevation: 16,
+          shadowColor: "#000000",
+          shadowOpacity: 0.22,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: -5 },
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: 10,
+          fontWeight: "800",
+          letterSpacing: 0.2,
         },
         tabBarIcon: ({ focused }) => {
           switch (route.name) {

@@ -4,6 +4,7 @@ import { useAllTournaments } from "@/hooks/useTournaments";
 import { useTheme } from "@/theme/ThemeProvider";
 import type { TournamentStatus, TournamentSummary } from "@/types/tournament";
 import { useRouter } from "expo-router";
+import { Trophy } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -42,11 +43,17 @@ export default function TournamentsScreen() {
       edges={["top"]}
     >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Tournaments
-        </Text>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={[styles.eyebrow, { color: colors.accent }]}>THE COMPETITIVE EDGE</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Tournaments</Text>
+          </View>
+          <View style={[styles.iconTile, { backgroundColor: colors.surfaceLight }]}>
+            <Trophy size={22} color={colors.accent} />
+          </View>
+        </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Browse, track, and join active competitions.
+          Find your next challenge. Earn your place.
         </Text>
       </View>
 
@@ -74,14 +81,18 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 4,
+    gap: 9,
   },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
+  iconTile: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   title: {
-    fontSize: 22,
-    fontWeight: "800",
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: -0.6,
   },
   subtitle: {
     fontSize: 14,
