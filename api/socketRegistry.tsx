@@ -11,7 +11,7 @@ import React, {
   useState,
 } from "react";
 
-type SocketHandler = (payload?: any) => void;s
+type SocketHandler = (payload?: any) => void;
 
 export interface RealtimeSocket {
   on: (event: string, handler: SocketHandler) => RealtimeSocket;
