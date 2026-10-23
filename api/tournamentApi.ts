@@ -54,26 +54,29 @@ const toApiTournament = (item: any): ApiTournament => ({
     profilePicture: participant.user?.avatar ?? participant.profilePicture ?? null,
     status: "active",
   })),
-  fixtures: item.fixtures?.map((fixture: any) => ({
-    id: fixture.id,
-    matchday: fixture.round ?? fixture.matchday ?? 1,
-    status: fixture.status ?? (fixture.verified ? "completed" : "scheduled"),
-    scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
-    homeParticipant: {
-      id: fixture.homeParticipant?.id ?? fixture.homeParticipantId,
-      userId: fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
-      username: fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
-      profilePicture: fixture.homeParticipant?.user?.avatar ?? null,
-    },
-    awayParticipant: {
-      id: fixture.awayParticipant?.id ?? fixture.awayParticipantId,
-      userId: fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
-      username: fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
-      profilePicture: fixture.awayParticipant?.user?.avatar ?? null,
-    },
-    homeScore: fixture.homeScore ?? null,
-    awayScore: fixture.awayScore ?? null,
-  })),
+  fixtures: item.fixtures?.map((fixture: any) => {
+    const match = item.matches?.find((candidate: any) => candidate.fixtureId === fixture.id);
+    return {
+      id: fixture.id,
+      matchday: fixture.round ?? fixture.matchday ?? 1,
+      status: match?.status ?? fixture.status ?? (match?.verified ? "VERIFIED" : "SCHEDULED"),
+      scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
+      homeParticipant: {
+        id: fixture.homeParticipant?.id ?? fixture.homeParticipantId,
+        userId: fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
+        username: fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
+        profilePicture: fixture.homeParticipant?.user?.avatar ?? null,
+      },
+      awayParticipant: {
+        id: fixture.awayParticipant?.id ?? fixture.awayParticipantId,
+        userId: fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
+        username: fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
+        profilePicture: fixture.awayParticipant?.user?.avatar ?? null,
+      },
+      homeScore: match?.homeScore ?? fixture.homeScore ?? null,
+      awayScore: match?.awayScore ?? fixture.awayScore ?? null,
+    };
+  }),
   createdAt: item.createdAt,
   updatedAt: item.updatedAt,
 });
