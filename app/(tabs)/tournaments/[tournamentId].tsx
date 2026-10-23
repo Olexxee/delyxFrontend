@@ -77,7 +77,7 @@ export default function TournamentDetailScreen() {
 
   const lifecycleStatus = tournament.lifecycleStatus ?? "";
   const viewerRole = (tournament.viewerContext.role ?? "").toUpperCase();
-  const canManage = tournament.createdBy === user?.id || viewerRole === "OWNER" || viewerRole === "ADMIN";
+  const canManage = tournament.viewerContext.canManage || tournament.createdBy === user?.id || viewerRole === "OWNER" || viewerRole === "ADMIN";
   const actions = canManage ? lifecycleActions[lifecycleStatus as keyof typeof lifecycleActions] ?? [] : [];
 
   return (
