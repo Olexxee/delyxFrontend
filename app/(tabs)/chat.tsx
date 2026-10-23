@@ -43,10 +43,10 @@ export default function ChatHubScreen() {
           onPress={() => setActiveTab("chats")}
           style={[
             styles.segment,
-            activeTab === "chats" && { backgroundColor: colors.surface },
+            activeTab === "chats" && { backgroundColor: colors.accent },
           ]}
         >
-          <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
+          <Text style={{ color: activeTab === "chats" ? colors.background : colors.textSecondary, fontWeight: "800" }}>
             Chats
           </Text>
         </Pressable>
@@ -55,10 +55,10 @@ export default function ChatHubScreen() {
           onPress={() => setActiveTab("groups")}
           style={[
             styles.segment,
-            activeTab === "groups" && { backgroundColor: colors.surface },
+            activeTab === "groups" && { backgroundColor: colors.accent },
           ]}
         >
-          <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
+          <Text style={{ color: activeTab === "groups" ? colors.background : colors.textSecondary, fontWeight: "800" }}>
             Groups
           </Text>
         </Pressable>

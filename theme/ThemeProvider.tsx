@@ -1,5 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { useColorScheme } from "react-native";
+import { createContext, ReactNode, useContext, useState } from "react";
 import { DarkTheme, LightTheme, Theme } from "./theme";
 
 type ThemeContextType = Theme & {
@@ -9,14 +8,8 @@ type ThemeContextType = Theme & {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const systemScheme = useColorScheme();
-  const [currentTheme, setCurrentTheme] = useState<Theme>(
-    systemScheme === "dark" ? DarkTheme : LightTheme
-  );
-
-  useEffect(() => {
-    setCurrentTheme(systemScheme === "dark" ? DarkTheme : LightTheme);
-  }, [systemScheme]);
+  // Delyx opens in its intended dark gaming theme regardless of OS/browser settings.
+  const [currentTheme, setCurrentTheme] = useState<Theme>(DarkTheme);
 
   const toggleTheme = () => {
     setCurrentTheme((prev) => (prev.mode === "dark" ? LightTheme : DarkTheme));
