@@ -123,7 +123,7 @@ export default function GroupTournamentsScreen() {
           </View>
         ) : (
           <View style={{ borderTopWidth: 0.5, borderTopColor: colors.border }}>
-            {tournaments.map((tournament, index) => (
+            {tournaments.map((tournament) => (
               <Pressable
                 key={tournament.id}
                 onPress={() => openTournament(tournament.id)}
