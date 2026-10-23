@@ -1,4 +1,5 @@
 import api from "@/api/api";
+import { Platform } from "react-native";
 import type { ImagePickerAsset } from "expo-image-picker";
 
 export type MediaUploadPurpose =
@@ -36,19 +37,45 @@ export async function uploadMedia(
 ): Promise<MediaAsset> {
   if (!asset.uri) throw new Error("Choose a file before uploading.");
 
+  const fileName =
+    asset.fileName || asset.uri.split("/").pop()?.split("?")[0] || "upload.jpg";
+  const mimeType = asset.mimeType || "image/jpeg";
   const formData = new FormData();
+
   formData.append("purpose", purpose);
-  formData.append(
-    "media",
-    {
-      uri: asset.uri,
-      name: asset.fileName || asset.uri.split("/").pop() || "upload.jpg",
-      type: asset.mimeType || "image/jpeg",
-    } as any,
-  );
+
+  if (Platform.OS === "web") {
+    // On web, Multer needs a real File/Blob in FormData, not the React Native
+    // { uri, name, type } descriptor used by native fetch/XHR implementations.
+    let file = asset.file;
+
+    if (!file) {
+      const response = await fetch(asset.uri);
+      if (!response.ok) {
+        throw new Error("Could not read the selected image. Please choose it again.");
+      }
+      const blob = await response.blob();
+      file = new File([blob], fileName, {
+        type: mimeType || blob.type || "application/octet-stream",
+      });
+    }
+
+    formData.append("media", file, file.name || fileName);
+  } else {
+    // Expo native uploads use the React Native URI descriptor.
+    formData.append(
+      "media",
+      {
+        uri: asset.uri,
+        name: fileName,
+        type: mimeType,
+      } as any,
+    );
+  }
 
   const { data } = await api.post<ApiEnvelope<MediaAsset>>("/api/media", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    // Do not set Content-Type manually. Axios/the platform must add the
+    // multipart boundary so Multer can parse the incoming file correctly.
     timeout: 60000,
   });
 
