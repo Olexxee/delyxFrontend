@@ -3,6 +3,7 @@ import type {
   ApiTournament,
   ApiTournamentDetailResponse,
   ApiTournamentListResponse,
+  ApiPlayerTournamentStatistics,
   TournamentMutationResponse,
 } from "@/types/tournamentApi";
 
@@ -80,6 +81,16 @@ export const getTournamentById = async (
 export const fetchAllTournaments = async (): Promise<ApiTournamentListResponse> => {
   const response = await api.get<ApiEnvelope<any[]>>("/api/competitions");
   return listResponse(response.data.data);
+};
+
+export const getTournamentStatistics = async (
+  groupId: string,
+  tournamentId: string,
+): Promise<ApiPlayerTournamentStatistics[]> => {
+  const response = await api.get<ApiEnvelope<ApiPlayerTournamentStatistics[]>>(
+    `/api/community/${encodeURIComponent(groupId)}/competitions/${encodeURIComponent(tournamentId)}/statistics`,
+  );
+  return Array.isArray(response.data.data) ? response.data.data : [];
 };
 
 export const createTournament = async (payload: {
