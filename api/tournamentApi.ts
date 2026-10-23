@@ -28,6 +28,7 @@ const toApiTournament = (item: any): ApiTournament => ({
   type: String(item.type ?? "LEAGUE").toLowerCase(),
   description: item.description ?? undefined,
   status: statusMap[item.status] ?? String(item.status ?? "upcoming").toLowerCase(),
+  lifecycleStatus: item.status,
   isRegistrationOpen: item.status === "REGISTRATION_OPEN" && (item.registration?.isOpen ?? item.registrationOpen ?? true),
   maxParticipants: item.maxParticipants ?? 0,
   participantCount: item._count?.participants ?? item.participants?.length ?? 0,
@@ -45,6 +46,7 @@ const toApiTournament = (item: any): ApiTournament => ({
     totalMatches: item.matches?.length ?? item._count?.matches ?? 0,
     completedMatches: item.matches?.filter((match: any) => match.verified || match.status === "VERIFIED" || match.status === "COMPLETED").length ?? 0,
   },
+  viewerContext: item.viewerContext ?? item.userContext,
   participants: item.participants?.map((participant: any) => ({
     id: participant.id,
     userId: participant.playerId ?? participant.userId,
