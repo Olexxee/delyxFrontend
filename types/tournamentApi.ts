@@ -108,6 +108,7 @@ export interface ApiTournament {
   viewerContext?: {
     isRegistered?: boolean;
     role?: string | null;
+    canManage?: boolean;
     participantId?: string | null;
     canJoin?: boolean;
     canLeave?: boolean;
