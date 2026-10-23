@@ -54,6 +54,7 @@ export const getTournamentUIConfig = (
 
       if (hasFixtures) visibleTabs.push("fixtures");
       if (isStandingsType) visibleTabs.push("standings");
+      if (tournament.progress.completedMatches > 0) visibleTabs.push("statistics");
 
       return {
         defaultTab: hasFixtures ? "fixtures" : "overview",
@@ -71,6 +72,7 @@ export const getTournamentUIConfig = (
       if (hasFixtures) visibleTabs.push("fixtures");
       if (isStandingsType) visibleTabs.push("standings");
       visibleTabs.push("results");
+      visibleTabs.push("statistics");
 
       return {
         defaultTab: isStandingsType ? "standings" : "results",
