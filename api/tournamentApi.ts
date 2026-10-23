@@ -10,46 +10,67 @@ import type {
 type ApiEnvelope<T> = { success: boolean; data: T; message?: string };
 
 const statusMap: Record<string, string> = {
-  DRAFT: "draft",
+  DRAFT: "upcoming",
   REGISTRATION_OPEN: "registration",
-  REGISTRATION_CLOSED: "registration",
+  REGISTRATION_CLOSED: "upcoming",
   READY: "upcoming",
   IN_PROGRESS: "ongoing",
   COMPLETED: "completed",
-  CANCELLED: "cancelled",
+  CANCELLED: "completed",
   ARCHIVED: "completed",
 };
 
 const toApiTournament = (item: any): ApiTournament => ({
   id: item.id,
   name: item.name,
-  groupId: item.communityId,
+  groupId: item.communityId ?? item.groupId,
   createdBy: item.createdBy,
   type: String(item.type ?? "LEAGUE").toLowerCase(),
   description: item.description ?? undefined,
   status: statusMap[item.status] ?? String(item.status ?? "upcoming").toLowerCase(),
-  isRegistrationOpen: Boolean(item.registrationOpen),
+  isRegistrationOpen: item.status === "REGISTRATION_OPEN" && (item.registration?.isOpen ?? item.registrationOpen ?? true),
   maxParticipants: item.maxParticipants ?? 0,
   participantCount: item._count?.participants ?? item.participants?.length ?? 0,
-  registrationDeadline: item.registrationClosesAt ?? undefined,
+  registrationDeadline: item.registration?.closesAt ?? item.registrationClosesAt ?? undefined,
   startDate: item.startsAt ?? item.registrationOpensAt ?? item.createdAt,
   endDate: item.endsAt ?? item.registrationClosesAt ?? item.updatedAt,
   settings: {
-    pointsForWin: item.pointsForWin ?? 3,
-    pointsForDraw: item.pointsForDraw ?? 1,
-    pointsForLoss: item.pointsForLoss ?? 0,
+    pointsForWin: item.rules?.pointsForWin ?? item.pointsForWin ?? 3,
+    pointsForDraw: item.rules?.pointsForDraw ?? item.pointsForDraw ?? 1,
+    pointsForLoss: item.rules?.pointsForLoss ?? item.pointsForLoss ?? 0,
+    rounds: item.rules?.doubleRoundRobin ? "double" : "single",
   },
   progress: {
-    currentMatchday: item.runtimeCurrentRound ?? 0,
+    currentMatchday: item.runtime?.currentRound ?? item.runtimeCurrentRound ?? 0,
     totalMatches: item.matches?.length ?? item._count?.matches ?? 0,
-    completedMatches: item.matches?.filter((match: any) => match.status === "VERIFIED" || match.status === "COMPLETED").length ?? 0,
+    completedMatches: item.matches?.filter((match: any) => match.verified || match.status === "VERIFIED" || match.status === "COMPLETED").length ?? 0,
   },
   participants: item.participants?.map((participant: any) => ({
     id: participant.id,
-    userId: participant.userId,
-    username: participant.user?.username ?? "Player",
-    profilePicture: participant.user?.avatar ?? null,
-    status: "registered",
+    userId: participant.playerId ?? participant.userId,
+    username: participant.user?.username ?? participant.username ?? "Player",
+    profilePicture: participant.user?.avatar ?? participant.profilePicture ?? null,
+    status: "active",
+  })),
+  fixtures: item.fixtures?.map((fixture: any) => ({
+    id: fixture.id,
+    matchday: fixture.round ?? fixture.matchday ?? 1,
+    status: fixture.status ?? (fixture.verified ? "completed" : "scheduled"),
+    scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
+    homeParticipant: {
+      id: fixture.homeParticipant?.id ?? fixture.homeParticipantId,
+      userId: fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
+      username: fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
+      profilePicture: fixture.homeParticipant?.user?.avatar ?? null,
+    },
+    awayParticipant: {
+      id: fixture.awayParticipant?.id ?? fixture.awayParticipantId,
+      userId: fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
+      username: fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
+      profilePicture: fixture.awayParticipant?.user?.avatar ?? null,
+    },
+    homeScore: fixture.homeScore ?? null,
+    awayScore: fixture.awayScore ?? null,
   })),
   createdAt: item.createdAt,
   updatedAt: item.updatedAt,
@@ -60,21 +81,16 @@ const listResponse = (items: any[]): ApiTournamentListResponse => ({
   tournaments: items.map(toApiTournament),
 });
 
-export const getGroupTournaments = async (
-  groupId: string,
-): Promise<ApiTournamentListResponse> => {
-  const response = await api.get<ApiEnvelope<any[]>>(
-    `/api/community/${encodeURIComponent(groupId)}/competitions`,
-  );
+const competitionPath = (groupId: string, tournamentId: string) =>
+  `/api/community/${encodeURIComponent(groupId)}/competitions/${encodeURIComponent(tournamentId)}`;
+
+export const getGroupTournaments = async (groupId: string): Promise<ApiTournamentListResponse> => {
+  const response = await api.get<ApiEnvelope<any[]>>(`/api/community/${encodeURIComponent(groupId)}/competitions`);
   return listResponse(response.data.data);
 };
 
-export const getTournamentById = async (
-  tournamentId: string,
-): Promise<ApiTournamentDetailResponse> => {
-  const response = await api.get<ApiEnvelope<any>>(
-    `/api/competitions/${encodeURIComponent(tournamentId)}`,
-  );
+export const getTournamentById = async (tournamentId: string): Promise<ApiTournamentDetailResponse> => {
+  const response = await api.get<ApiEnvelope<any>>(`/api/competitions/${encodeURIComponent(tournamentId)}`);
   return { success: true, tournament: toApiTournament(response.data.data) };
 };
 
@@ -83,82 +99,52 @@ export const fetchAllTournaments = async (): Promise<ApiTournamentListResponse> 
   return listResponse(response.data.data);
 };
 
-export const getTournamentStatistics = async (
-  groupId: string,
-  tournamentId: string,
-): Promise<ApiPlayerTournamentStatistics[]> => {
-  const response = await api.get<ApiEnvelope<ApiPlayerTournamentStatistics[]>>(
-    `/api/community/${encodeURIComponent(groupId)}/competitions/${encodeURIComponent(tournamentId)}/statistics`,
-  );
+export const getTournamentStatistics = async (groupId: string, tournamentId: string): Promise<ApiPlayerTournamentStatistics[]> => {
+  const response = await api.get<ApiEnvelope<ApiPlayerTournamentStatistics[]>>(`${competitionPath(groupId, tournamentId)}/statistics`);
   return Array.isArray(response.data.data) ? response.data.data : [];
 };
 
 export const createTournament = async (payload: {
-  name: string;
-  description?: string;
-  groupId: string;
-  type: "league" | "knockout";
+  name: string; description?: string; groupId: string; type: "league" | "knockout";
   maxParticipants: number;
-  settings: {
-    pointsForWin: number;
-    pointsForDraw: number;
-    pointsForLoss: number;
-    rounds: "single" | "double";
-  };
-  startDate: string;
-  endDate: string;
-  registrationDeadline: string;
+  settings: { pointsForWin: number; pointsForDraw: number; pointsForLoss: number; rounds: "single" | "double" };
+  startDate: string; endDate: string; registrationDeadline: string;
 }) => {
   const response = await api.post<ApiEnvelope<any>>(
     `/api/community/${encodeURIComponent(payload.groupId)}/competitions`,
     {
-      name: payload.name,
-      description: payload.description,
-      type: payload.type.toUpperCase(),
+      name: payload.name, description: payload.description, type: payload.type.toUpperCase(),
       maxParticipants: payload.maxParticipants,
-      pointsForWin: payload.settings.pointsForWin,
-      pointsForDraw: payload.settings.pointsForDraw,
+      pointsForWin: payload.settings.pointsForWin, pointsForDraw: payload.settings.pointsForDraw,
       pointsForLoss: payload.settings.pointsForLoss,
       rules: { doubleRoundRobin: payload.settings.rounds === "double" },
-      visibility: "PUBLIC",
-      registrationMode: "OPEN",
-      startsAt: payload.startDate,
-      endsAt: payload.endDate,
-      registrationOpensAt: new Date().toISOString(),
-      registrationClosesAt: payload.registrationDeadline,
+      visibility: "PUBLIC", registrationMode: "OPEN",
+      startsAt: payload.startDate, endsAt: payload.endDate,
+      registrationOpensAt: new Date().toISOString(), registrationClosesAt: payload.registrationDeadline,
     },
   );
-
-  return {
-    success: response.data.success,
-    message: response.data.message ?? "Tournament created successfully.",
-    tournament: toApiTournament(response.data.data),
-  };
+  return { success: response.data.success, message: response.data.message ?? "Tournament created successfully.", tournament: toApiTournament(response.data.data) };
 };
 
-export const joinTournament = async (
-  tournamentId: string,
-): Promise<TournamentMutationResponse> => {
-  const response = await api.post<ApiEnvelope<any>>(
-    `/api/competitions/${encodeURIComponent(tournamentId)}/join`,
-  );
+export type TournamentLifecycleAction = "open-registration" | "close-registration" | "generate-fixtures" | "start" | "advance-round" | "complete";
+
+export const runTournamentLifecycleAction = async (groupId: string, tournamentId: string, action: TournamentLifecycleAction) => {
+  const response = await api.post<ApiEnvelope<any>>(`${competitionPath(groupId, tournamentId)}/${action}`);
+  return { success: response.data.success, message: response.data.message ?? "Tournament updated successfully.", tournament: toApiTournament(response.data.data) };
+};
+
+export const submitTournamentResult = async (groupId: string, tournamentId: string, fixtureId: string, homeScore: number, awayScore: number) => {
+  const response = await api.post<ApiEnvelope<any>>(`${competitionPath(groupId, tournamentId)}/results`, { fixtureId, homeScore, awayScore });
+  return { success: response.data.success, message: response.data.message ?? "Result submitted for administrator review." };
+};
+
+export const joinTournament = async (tournamentId: string): Promise<TournamentMutationResponse> => {
+  const response = await api.post<ApiEnvelope<any>>(`/api/competitions/${encodeURIComponent(tournamentId)}/join`);
   const detail = await getTournamentById(tournamentId);
-  return {
-    success: true,
-    message: response.data.message ?? "Competition registration submitted",
-    tournament: detail.tournament as any,
-  };
+  return { success: true, message: response.data.message ?? "Competition registration submitted", tournament: detail.tournament as any };
 };
 
-export const leaveTournament = async (
-  tournamentId: string,
-): Promise<TournamentMutationResponse> => {
-  const response = await api.post<ApiEnvelope<any>>(
-    `/api/competitions/${encodeURIComponent(tournamentId)}/leave`,
-  );
-  return {
-    success: true,
-    message: response.data.message ?? "Left competition",
-    tournament: toApiTournament(response.data.data) as any,
-  };
+export const leaveTournament = async (tournamentId: string): Promise<TournamentMutationResponse> => {
+  const response = await api.post<ApiEnvelope<any>>(`/api/competitions/${encodeURIComponent(tournamentId)}/leave`);
+  return { success: true, message: response.data.message ?? "Left competition", tournament: toApiTournament(response.data.data) as any };
 };
