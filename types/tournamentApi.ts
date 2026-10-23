@@ -79,6 +79,7 @@ export interface ApiTournament {
   type: string;
   description?: string;
   status: string;
+  lifecycleStatus?: string;
   isRegistrationOpen?: boolean;
   maxParticipants: number;
   participantCount?: number;
