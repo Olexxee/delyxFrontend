@@ -188,6 +188,7 @@ export const toTournamentDetail = (
       tournament.viewerContext?.role ??
       tournament.userContext?.role ??
       null,
+    canManage: tournament.viewerContext?.canManage ?? tournament.userContext?.canManage ?? false,
     participantId:
       tournament.viewerContext?.participantId ??
       tournament.userContext?.participantId ??
