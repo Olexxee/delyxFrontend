@@ -56,22 +56,24 @@ const toApiTournament = (item: any): ApiTournament => ({
   })),
   fixtures: item.fixtures?.map((fixture: any) => {
     const match = item.matches?.find((candidate: any) => candidate.fixtureId === fixture.id);
+    const home = item.participants?.find((participant: any) => participant.id === fixture.homeParticipantId);
+    const away = item.participants?.find((participant: any) => participant.id === fixture.awayParticipantId);
     return {
       id: fixture.id,
       matchday: fixture.round ?? fixture.matchday ?? 1,
       status: match?.status ?? fixture.status ?? (match?.verified ? "VERIFIED" : "SCHEDULED"),
       scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
       homeParticipant: {
-        id: fixture.homeParticipant?.id ?? fixture.homeParticipantId,
-        userId: fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
-        username: fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
-        profilePicture: fixture.homeParticipant?.user?.avatar ?? null,
+        id: home?.id ?? fixture.homeParticipant?.id ?? fixture.homeParticipantId,
+        userId: home?.userId ?? fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
+        username: home?.user?.username ?? fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
+        profilePicture: home?.user?.avatar ?? fixture.homeParticipant?.user?.avatar ?? null,
       },
       awayParticipant: {
-        id: fixture.awayParticipant?.id ?? fixture.awayParticipantId,
-        userId: fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
-        username: fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
-        profilePicture: fixture.awayParticipant?.user?.avatar ?? null,
+        id: away?.id ?? fixture.awayParticipant?.id ?? fixture.awayParticipantId,
+        userId: away?.userId ?? fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
+        username: away?.user?.username ?? fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
+        profilePicture: away?.user?.avatar ?? fixture.awayParticipant?.user?.avatar ?? null,
       },
       homeScore: match?.homeScore ?? fixture.homeScore ?? null,
       awayScore: match?.awayScore ?? fixture.awayScore ?? null,
