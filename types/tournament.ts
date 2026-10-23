@@ -23,6 +23,10 @@ export type TournamentRoundMode = "single" | "double";
 export type FixtureStatus =
   | "scheduled"
   | "in_progress"
+  | "submitted"
+  | "disputed"
+  | "rejected"
+  | "verified"
   | "completed"
   | "postponed";
 
