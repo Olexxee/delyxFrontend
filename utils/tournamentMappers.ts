@@ -64,6 +64,7 @@ const toParticipant = (
   participant: ApiTournamentParticipant,
 ): TournamentParticipant => ({
   id: normalizeId(participant.id ?? participant._id ?? participant.userId),
+  userId: participant.userId,
   username: participant.username,
   profilePicture: participant.profilePicture ?? null,
   status: normalizeParticipantStatus(participant.status),

@@ -6,12 +6,33 @@ import type { MemberSummary } from "@/types/member";
 import { useTheme } from "@/theme/ThemeProvider";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 
+type ApiMember = {
+  id: string;
+  userId?: string;
+  role?: string;
+  user?: { username?: string | null; avatar?: string | null } | null;
+};
+
 const useGroupMembers = (groupId: string) =>
   useQuery<MemberSummary[]>({
     queryKey: ["groupMembers", groupId],
     queryFn: async () => {
-      const res = await api.get(`/groups/${groupId}/members`);
-      return res.data.members;
+      const res = await api.get<{
+        success: boolean;
+        data: { members: ApiMember[]; total: number };
+      }>(`/api/community/${encodeURIComponent(groupId)}/members`);
+
+      const members = res.data.data?.members;
+      if (!Array.isArray(members)) {
+        throw new Error("The server returned an invalid members response.");
+      }
+
+      return members.map((member) => ({
+        id: member.userId ?? member.id,
+        displayName: member.user?.username?.trim() || "Member",
+        ...(member.user?.avatar ? { avatarUrl: member.user.avatar } : {}),
+        role: (member.role ?? "MEMBER").toLowerCase() as MemberSummary["role"],
+      }));
     },
     enabled: Boolean(groupId),
   });
@@ -44,16 +65,12 @@ function MemberRow({ item }: { item: MemberSummary }) {
           borderColor: colors.accent,
         }}
       >
-        <Text
-          style={{ color: colors.textPrimary, fontWeight: "700", fontSize: 15 }}
-        >
-          {item.displayName[0].toUpperCase()}
+        <Text style={{ color: colors.textPrimary, fontWeight: "700", fontSize: 15 }}>
+          {(item.displayName || "M")[0].toUpperCase()}
         </Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text
-          style={{ color: colors.textPrimary, fontWeight: "600", fontSize: 14 }}
-        >
+        <Text style={{ color: colors.textPrimary, fontWeight: "600", fontSize: 14 }}>
           {item.displayName}
         </Text>
         <Text
@@ -68,14 +85,7 @@ function MemberRow({ item }: { item: MemberSummary }) {
         </Text>
       </View>
       {item.isOnline && (
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: "#22c55e",
-          }}
-        />
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
       )}
     </View>
   );
@@ -85,11 +95,11 @@ export default function GroupMembersScreen() {
   const { colors } = useTheme();
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const { shell } = useGroupShell();
-  const { data, isLoading } = useGroupMembers(groupId);
+  const { data, isLoading, isError, error } = useGroupMembers(groupId);
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-black">
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#000" }}>
         <ActivityIndicator color="#fff" />
       </View>
     );
@@ -97,26 +107,31 @@ export default function GroupMembersScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <View
-        style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}
-      >
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: 11,
-            fontWeight: "700",
-            letterSpacing: 1,
-          }}
-        >
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: "700", letterSpacing: 1 }}>
           MEMBERS · {data?.length ?? shell.memberCount}
         </Text>
       </View>
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MemberRow item={item} />}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      />
+      {isError ? (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
+          <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
+            Could not load group members
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
+            {error instanceof Error ? error.message : "Please try again."}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={data ?? []}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MemberRow item={item} />}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          ListEmptyComponent={
+            <Text style={{ color: colors.textSecondary, padding: 16 }}>No members found.</Text>
+          }
+        />
+      )}
     </View>
   );
 }
