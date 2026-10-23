@@ -124,6 +124,7 @@ export interface TournamentDetail {
   description?: string;
 
   status: TournamentStatus;
+  lifecycleStatus?: string;
   isRegistrationOpen: boolean;
 
   maxParticipants: number;
