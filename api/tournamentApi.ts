@@ -117,7 +117,12 @@ export const createTournament = async (payload: {
       registrationClosesAt: payload.registrationDeadline,
     },
   );
-  return response.data;
+
+  return {
+    success: response.data.success,
+    message: response.data.message ?? "Tournament created successfully.",
+    tournament: toApiTournament(response.data.data),
+  };
 };
 
 export const joinTournament = async (
@@ -140,5 +145,9 @@ export const leaveTournament = async (
   const response = await api.post<ApiEnvelope<any>>(
     `/api/competitions/${encodeURIComponent(tournamentId)}/leave`,
   );
-  return { success: true, message: response.data.message ?? "Left competition", tournament: toApiTournament(response.data.data) as any };
+  return {
+    success: true,
+    message: response.data.message ?? "Left competition",
+    tournament: toApiTournament(response.data.data) as any,
+  };
 };
