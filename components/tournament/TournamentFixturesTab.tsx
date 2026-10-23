@@ -45,7 +45,7 @@ export default function TournamentFixturesTab({
               const score = scores[fixture.id] ?? { home: "", away: "" };
               const isPending = fixture.status.toUpperCase() === "SUBMITTED" || fixture.status.toUpperCase() === "DISPUTED";
               const isVerified = fixture.status.toUpperCase() === "VERIFIED" || fixture.status.toUpperCase() === "COMPLETED";
-              const canReport = canSubmitResults && isViewerFixture && !isVerified && !isPending;
+              const canReport = canSubmitResults && isViewerFixture && !isVerified;
 
               return (
                 <View key={fixture.id} style={[styles.fixtureCard, {
