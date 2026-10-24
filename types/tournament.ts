@@ -125,6 +125,9 @@ export interface TournamentDetail {
 
   status: TournamentStatus;
   isRegistrationOpen: boolean;
+  lifecycleStatus?: string;
+  registrationMode?: "OPEN" | "APPROVAL" | "INVITE_ONLY";
+  registrationOpensAt?: string;
 
   maxParticipants: number;
   participantCount: number;
