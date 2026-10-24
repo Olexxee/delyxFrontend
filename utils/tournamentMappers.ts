@@ -150,6 +150,9 @@ export const toTournamentDetail = (
 
   status: normalizeStatus(tournament.status),
   isRegistrationOpen: tournament.isRegistrationOpen ?? false,
+  lifecycleStatus: tournament.lifecycleStatus ?? tournament.status,
+  registrationMode: tournament.registrationMode ?? "OPEN",
+  registrationOpensAt: tournament.registrationOpensAt,
 
   maxParticipants: tournament.maxParticipants,
   participantCount:
@@ -188,6 +191,9 @@ export const toTournamentDetail = (
       tournament.viewerContext?.role ??
       tournament.userContext?.role ??
       null,
+    canManage:
+      tournament.viewerContext?.canManage ??
+      ["OWNER", "ADMIN"].includes(String(tournament.viewerContext?.role ?? tournament.userContext?.role ?? "").toUpperCase()),
     participantId:
       tournament.viewerContext?.participantId ??
       tournament.userContext?.participantId ??

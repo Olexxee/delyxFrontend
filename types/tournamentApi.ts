@@ -80,6 +80,9 @@ export interface ApiTournament {
   description?: string;
   status: string;
   isRegistrationOpen?: boolean;
+  lifecycleStatus?: string;
+  registrationMode?: "OPEN" | "APPROVAL" | "INVITE_ONLY";
+  registrationOpensAt?: string;
   maxParticipants: number;
   participantCount?: number;
   totalParticipantsCount?: number;
@@ -96,9 +99,9 @@ export interface ApiTournament {
   };
   progress?: {
     totalMatches?: number;
+    totalMatchdays?: number;
     completedMatches?: number;
     currentMatchday?: number;
-    totalMatchdays?: number;
   };
   totalMatches?: number;
   completedMatches?: number;
@@ -110,6 +113,7 @@ export interface ApiTournament {
     participantId?: string | null;
     canJoin?: boolean;
     canLeave?: boolean;
+    canManage?: boolean;
   };
   userContext?: {
     isRegistered?: boolean;

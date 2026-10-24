@@ -5,6 +5,9 @@ import {
   getTournamentById,
   joinTournament,
   leaveTournament,
+  runTournamentLifecycleAction,
+  updateTournamentSettings,
+  type TournamentLifecycleAction,
 } from "@/api/tournamentApi";
 import type {
   TournamentDetail,
@@ -92,6 +95,34 @@ export function useCreateTournament(groupId: string) {
       queryClient.invalidateQueries({
         queryKey: tournamentKeys.all,
       });
+    },
+  });
+}
+
+export function useTournamentLifecycle(groupId: string, tournamentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (action: TournamentLifecycleAction) => runTournamentLifecycleAction(groupId, tournamentId, action),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(tournamentId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.byGroup(groupId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
+      ]);
+    },
+  });
+}
+
+export function useUpdateTournamentSettings(groupId: string, tournamentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: Parameters<typeof updateTournamentSettings>[2]) => updateTournamentSettings(groupId, tournamentId, settings),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(tournamentId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.byGroup(groupId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
+      ]);
     },
   });
 }
