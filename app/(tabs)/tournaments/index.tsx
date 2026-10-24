@@ -4,9 +4,9 @@ import { useAllTournaments } from "@/hooks/useTournaments";
 import { useTheme } from "@/theme/ThemeProvider";
 import type { TournamentStatus, TournamentSummary } from "@/types/tournament";
 import { useRouter } from "expo-router";
-import { Trophy } from "lucide-react-native";
+import { Search, Trophy } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type ListTab = TournamentStatus | "all";
@@ -16,6 +16,7 @@ export default function TournamentsScreen() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<ListTab>("all");
+  const [search, setSearch] = useState("");
 
   const {
     data: tournaments = [],
@@ -26,9 +27,13 @@ export default function TournamentsScreen() {
   } = useAllTournaments();
 
   const filteredTournaments = useMemo(() => {
-    if (activeTab === "all") return tournaments;
-    return tournaments.filter((tournament) => tournament.status === activeTab);
-  }, [activeTab, tournaments]);
+    const query = search.trim().toLocaleLowerCase();
+    return tournaments.filter((tournament) => {
+      const matchesStatus = activeTab === "all" || tournament.status === activeTab;
+      const matchesSearch = !query || tournament.name.toLocaleLowerCase().includes(query);
+      return matchesStatus && matchesSearch;
+    });
+  }, [activeTab, search, tournaments]);
 
   const handleSelect = (tournament: TournamentSummary) => {
     router.push({
@@ -55,6 +60,19 @@ export default function TournamentsScreen() {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Find your next challenge. Earn your place.
         </Text>
+      </View>
+
+      <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Search size={18} color={colors.textSecondary} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search tournaments"
+          placeholderTextColor={colors.textSecondary}
+          returnKeyType="search"
+          accessibilityLabel="Search tournaments"
+          style={[styles.searchInput, { color: colors.textPrimary }]}
+        />
       </View>
 
       <TournamentFilterTabs
@@ -89,6 +107,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
   iconTile: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  searchBox: { marginHorizontal: 16, marginTop: 14, minHeight: 48, borderWidth: 1, borderRadius: 15, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10 },
+  searchInput: { flex: 1, minHeight: 46, fontSize: 14 },
   title: {
     fontSize: 28,
     fontWeight: "900",
