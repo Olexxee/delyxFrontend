@@ -157,6 +157,8 @@ export const toTournamentDetail = (
   participants: (tournament.participants ?? []).map(toParticipant),
 
   registrationDeadline: tournament.registrationDeadline ?? "",
+  registrationOpensAt: tournament.registrationOpensAt,
+  registrationMode: tournament.registrationMode ?? "OPEN",
   startDate: tournament.startDate,
   endDate: tournament.endDate,
 
