@@ -102,7 +102,6 @@ export interface ApiTournament {
     totalMatchdays?: number;
     completedMatches?: number;
     currentMatchday?: number;
-    totalMatchdays?: number;
   };
   totalMatches?: number;
   completedMatches?: number;
