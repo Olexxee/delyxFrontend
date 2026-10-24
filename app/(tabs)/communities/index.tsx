@@ -1,4 +1,7 @@
 import { useCommunities, useCreateCommunity, useJoinCommunity } from "@/hooks/useCommunities";
+import { getMyCommunityInvitations, respondToCommunityInvitation } from "@/api/groups.api";
+import type { CommunityInvitation } from "@/api/groups.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Search, UsersRound, Plus, X, ChevronRight, ImagePlus, ArrowUpRight } from "lucide-react-native";
@@ -9,6 +12,7 @@ import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -36,6 +40,22 @@ export default function CommunitiesScreen() {
   const communities = useCommunities(debouncedSearch);
   const create = useCreateCommunity();
   const join = useJoinCommunity();
+  const queryClient = useQueryClient();
+  const invitations = useQuery({
+    queryKey: ["myCommunityInvitations"],
+    queryFn: getMyCommunityInvitations,
+  });
+  const respondInvite = useMutation({
+    mutationFn: ({ inviteId, accept }: { inviteId: string; accept: boolean }) => respondToCommunityInvitation(inviteId, accept),
+    onSuccess: async (_result, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["myCommunityInvitations"] }),
+        queryClient.invalidateQueries({ queryKey: ["communities"] }),
+        queryClient.invalidateQueries({ queryKey: ["myGroups"] }),
+      ]);
+      if (variables.accept) Alert.alert("Invitation accepted", "You are now a member of the community.");
+    },
+  });
 
   const closeCreate = () => {
     if (create.isPending) return;
@@ -142,6 +162,26 @@ export default function CommunitiesScreen() {
           )}
         </View>
       </View>
+
+      {!!invitations.data?.length && (
+        <View style={{ marginHorizontal: 20, marginBottom: 8, padding: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: 10 }}>
+          <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "800" }}>Group invitations ({invitations.data.length})</Text>
+          {invitations.data.map((invite: CommunityInvitation) => (
+            <View key={invite.id} style={{ paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, gap: 6 }}>
+              <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>{invite.community.name}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Invited by {invite.invitedBy.username}</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable disabled={respondInvite.isPending} onPress={() => respondInvite.mutate({ inviteId: invite.id, accept: true })} style={{ backgroundColor: colors.accent, paddingHorizontal: 14, paddingVertical: 9, opacity: respondInvite.isPending ? 0.6 : 1 }}>
+                  <Text style={{ color: "#090D18", fontSize: 12, fontWeight: "800" }}>Accept</Text>
+                </Pressable>
+                <Pressable disabled={respondInvite.isPending} onPress={() => respondInvite.mutate({ inviteId: invite.id, accept: false })} style={{ borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 9, opacity: respondInvite.isPending ? 0.6 : 1 }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>Decline</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {communities.isLoading ? (
         <View style={styles.center}>
