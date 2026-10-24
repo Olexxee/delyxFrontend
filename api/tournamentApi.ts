@@ -146,6 +146,47 @@ export const createTournament = async (payload: {
   return { success: response.data.success, message: response.data.message ?? "Tournament created successfully.", tournament: toApiTournament(response.data.data) };
 };
 
+export type TournamentRegistrationMode = "OPEN" | "APPROVAL" | "INVITE_ONLY";
+
+export const updateTournamentSettings = async (
+  groupId: string,
+  tournamentId: string,
+  settings: {
+    name: string;
+    description?: string;
+    maxParticipants: number;
+    pointsForWin: number;
+    pointsForDraw: number;
+    pointsForLoss: number;
+    rounds: "single" | "double";
+    registrationMode: TournamentRegistrationMode;
+    registrationOpensAt: string;
+    registrationClosesAt: string;
+    startsAt: string;
+    endsAt: string;
+  },
+) => {
+  const response = await api.patch<ApiEnvelope<any>>(competitionPath(groupId, tournamentId), {
+    name: settings.name,
+    description: settings.description ?? null,
+    maxParticipants: settings.maxParticipants,
+    pointsForWin: settings.pointsForWin,
+    pointsForDraw: settings.pointsForDraw,
+    pointsForLoss: settings.pointsForLoss,
+    rules: { doubleRoundRobin: settings.rounds === "double" },
+    registrationMode: settings.registrationMode,
+    registrationOpensAt: settings.registrationOpensAt,
+    registrationClosesAt: settings.registrationClosesAt,
+    startsAt: settings.startsAt,
+    endsAt: settings.endsAt,
+  });
+  return {
+    success: response.data.success,
+    message: response.data.message ?? "Tournament settings saved.",
+    tournament: toApiTournament(response.data.data),
+  };
+};
+
 export type TournamentLifecycleAction = "open-registration" | "close-registration" | "generate-fixtures" | "start" | "advance-round" | "complete";
 
 export const runTournamentLifecycleAction = async (groupId: string, tournamentId: string, action: TournamentLifecycleAction) => {
