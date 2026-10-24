@@ -20,68 +20,81 @@ const statusMap: Record<string, string> = {
   ARCHIVED: "completed",
 };
 
-const toApiTournament = (item: any): ApiTournament => ({
-  id: item.id,
-  name: item.name,
-  groupId: item.communityId ?? item.groupId,
-  createdBy: item.createdBy,
-  type: String(item.type ?? "LEAGUE").toLowerCase(),
-  description: item.description ?? undefined,
-  status: statusMap[item.status] ?? String(item.status ?? "upcoming").toLowerCase(),
-  lifecycleStatus: item.status,
-  isRegistrationOpen: item.status === "REGISTRATION_OPEN" && (item.registration?.isOpen ?? item.registrationOpen ?? true),
-  maxParticipants: item.maxParticipants ?? 0,
-  participantCount: item._count?.participants ?? item.participants?.length ?? 0,
-  registrationDeadline: item.registration?.closesAt ?? item.registrationClosesAt ?? undefined,
-  startDate: item.startsAt ?? item.registrationOpensAt ?? item.createdAt,
-  endDate: item.endsAt ?? item.registrationClosesAt ?? item.updatedAt,
-  settings: {
-    pointsForWin: item.rules?.pointsForWin ?? item.pointsForWin ?? 3,
-    pointsForDraw: item.rules?.pointsForDraw ?? item.pointsForDraw ?? 1,
-    pointsForLoss: item.rules?.pointsForLoss ?? item.pointsForLoss ?? 0,
-    rounds: item.rules?.doubleRoundRobin ? "double" : "single",
-  },
-  progress: {
-    currentMatchday: item.runtime?.currentRound ?? item.runtimeCurrentRound ?? 0,
-    totalMatches: item.matches?.length ?? item._count?.matches ?? 0,
-    completedMatches: item.matches?.filter((match: any) => match.verified || match.status === "VERIFIED" || match.status === "COMPLETED").length ?? 0,
-  },
-  viewerContext: item.viewerContext ?? item.userContext,
-  participants: item.participants?.map((participant: any) => ({
-    id: participant.id,
-    userId: participant.playerId ?? participant.userId,
-    username: participant.user?.username ?? participant.username ?? "Player",
-    profilePicture: participant.user?.avatar ?? participant.profilePicture ?? null,
-    status: "active",
-  })),
-  fixtures: item.fixtures?.map((fixture: any) => {
-    const match = item.matches?.find((candidate: any) => candidate.fixtureId === fixture.id);
-    const home = item.participants?.find((participant: any) => participant.id === fixture.homeParticipantId);
-    const away = item.participants?.find((participant: any) => participant.id === fixture.awayParticipantId);
-    return {
-      id: fixture.id,
-      matchday: fixture.round ?? fixture.matchday ?? 1,
-      status: match?.status ?? fixture.status ?? (match?.verified ? "VERIFIED" : "SCHEDULED"),
-      scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
-      homeParticipant: {
-        id: home?.id ?? fixture.homeParticipant?.id ?? fixture.homeParticipantId,
-        userId: home?.userId ?? fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
-        username: home?.user?.username ?? fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
-        profilePicture: home?.user?.avatar ?? fixture.homeParticipant?.user?.avatar ?? null,
-      },
-      awayParticipant: {
-        id: away?.id ?? fixture.awayParticipant?.id ?? fixture.awayParticipantId,
-        userId: away?.userId ?? fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
-        username: away?.user?.username ?? fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
-        profilePicture: away?.user?.avatar ?? fixture.awayParticipant?.user?.avatar ?? null,
-      },
-      homeScore: match?.homeScore ?? fixture.homeScore ?? null,
-      awayScore: match?.awayScore ?? fixture.awayScore ?? null,
-    };
-  }),
-  createdAt: item.createdAt,
-  updatedAt: item.updatedAt,
-});
+const toApiTournament = (item: any): ApiTournament => {
+  // The competition service returns an aggregate persistence record, while
+  // community list endpoints return flat Prisma rows. Normalize both shapes.
+  const competition = item.competition ?? item;
+  const participants = item.participants ?? competition.participants ?? [];
+  const fixtures = item.fixtures ?? competition.fixtures ?? [];
+  const matches = item.matches ?? competition.matches ?? [];
+  const rules = competition.rules ?? {};
+  const status = competition.status;
+
+  return {
+    id: competition.id,
+    name: competition.name,
+    groupId: competition.communityId ?? competition.groupId,
+    createdBy: competition.createdBy,
+    type: String(competition.type ?? "LEAGUE").toLowerCase(),
+    description: competition.description ?? undefined,
+    status: statusMap[status] ?? String(status ?? "upcoming").toLowerCase(),
+    lifecycleStatus: status,
+    isRegistrationOpen: status === "REGISTRATION_OPEN" && (competition.registration?.isOpen ?? competition.registrationOpen ?? true),
+    maxParticipants: competition.maxParticipants ?? 0,
+    participantCount: item._count?.participants ?? participants.length,
+    registrationMode: competition.registration?.mode ?? competition.registrationMode ?? "OPEN",
+    registrationOpensAt: competition.registration?.opensAt ?? competition.registrationOpensAt ?? undefined,
+    registrationDeadline: competition.registration?.closesAt ?? competition.registrationClosesAt ?? undefined,
+    startDate: competition.startsAt ?? competition.createdAt,
+    endDate: competition.endsAt ?? competition.updatedAt,
+    settings: {
+      pointsForWin: rules.pointsForWin ?? competition.pointsForWin ?? 3,
+      pointsForDraw: rules.pointsForDraw ?? competition.pointsForDraw ?? 1,
+      pointsForLoss: rules.pointsForLoss ?? competition.pointsForLoss ?? 0,
+      rounds: rules.doubleRoundRobin ? "double" : "single",
+    },
+    progress: {
+      currentMatchday: competition.runtime?.currentRound ?? competition.runtimeCurrentRound ?? 0,
+      totalMatches: matches.length || item._count?.matches || 0,
+      completedMatches: matches.filter((match: any) => match.verified || match.status === "VERIFIED" || match.status === "COMPLETED").length,
+    },
+    viewerContext: item.viewerContext ?? item.userContext,
+    participants: participants.map((participant: any) => ({
+      id: participant.id,
+      userId: participant.playerId ?? participant.userId,
+      username: participant.user?.username ?? participant.username ?? "Player",
+      profilePicture: participant.user?.avatar ?? participant.profilePicture ?? null,
+      status: "active",
+    })),
+    fixtures: fixtures.map((fixture: any) => {
+      const match = matches.find((candidate: any) => candidate.fixtureId === fixture.id);
+      const home = participants.find((participant: any) => participant.id === fixture.homeParticipantId);
+      const away = participants.find((participant: any) => participant.id === fixture.awayParticipantId);
+      return {
+        id: fixture.id,
+        matchday: fixture.round ?? fixture.matchday ?? 1,
+        status: match?.status ?? fixture.status ?? (match?.verified ? "VERIFIED" : "SCHEDULED"),
+        scheduledDate: fixture.scheduledAt ?? fixture.scheduledDate,
+        homeParticipant: {
+          id: home?.id ?? fixture.homeParticipant?.id ?? fixture.homeParticipantId,
+          userId: home?.userId ?? home?.playerId ?? fixture.homeParticipant?.playerId ?? fixture.homeParticipant?.userId,
+          username: home?.user?.username ?? fixture.homeParticipant?.user?.username ?? fixture.homeParticipant?.username ?? "Home player",
+          profilePicture: home?.user?.avatar ?? fixture.homeParticipant?.user?.avatar ?? null,
+        },
+        awayParticipant: {
+          id: away?.id ?? fixture.awayParticipant?.id ?? fixture.awayParticipantId,
+          userId: away?.userId ?? away?.playerId ?? fixture.awayParticipant?.playerId ?? fixture.awayParticipant?.userId,
+          username: away?.user?.username ?? fixture.awayParticipant?.user?.username ?? fixture.awayParticipant?.username ?? "Away player",
+          profilePicture: away?.user?.avatar ?? fixture.awayParticipant?.user?.avatar ?? null,
+        },
+        homeScore: match?.homeScore ?? fixture.homeScore ?? null,
+        awayScore: match?.awayScore ?? fixture.awayScore ?? null,
+      };
+    }),
+    createdAt: competition.createdAt,
+    updatedAt: competition.updatedAt,
+  };
+};
 
 const listResponse = (items: any[]): ApiTournamentListResponse => ({
   success: true,
