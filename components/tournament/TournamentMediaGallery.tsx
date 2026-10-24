@@ -35,7 +35,6 @@ export default function TournamentMediaGallery({ communityId, tournamentId, canM
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
       quality: 0.84,
     });
     if (result.canceled || !result.assets[0]) return;
