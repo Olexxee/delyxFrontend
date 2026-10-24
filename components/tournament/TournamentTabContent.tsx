@@ -10,9 +10,11 @@ import TournamentStatisticsTab from "./TournamentStatisticsTab";
 interface Props {
   activeTab: TournamentTabKey;
   tournament: TournamentDetail;
+  onSubmitResult?: (fixtureId: string, homeScore: number, awayScore: number) => void;
+  submittingFixtureId?: string | null;
 }
 
-export default function TournamentTabContent({ activeTab, tournament }: Props) {
+export default function TournamentTabContent({ activeTab, tournament, onSubmitResult, submittingFixtureId }: Props) {
   switch (activeTab) {
     case "overview":
       return <TournamentOverviewTab tournament={tournament} />;
@@ -33,6 +35,9 @@ export default function TournamentTabContent({ activeTab, tournament }: Props) {
         <TournamentFixturesTab
           fixtures={tournament.fixtures ?? []}
           viewerParticipantId={tournament.viewerContext.participantId}
+          canSubmitResults={tournament.lifecycleStatus === "IN_PROGRESS"}
+          onSubmitResult={onSubmitResult}
+          submittingFixtureId={submittingFixtureId}
         />
       );
 

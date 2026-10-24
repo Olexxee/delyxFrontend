@@ -74,13 +74,12 @@ const toParticipant = (
 const toFixture = (fixture: ApiTournamentFixture): TournamentFixture => ({
   id: normalizeId(fixture.id ?? fixture._id),
   matchday: fixture.matchday,
-  status:
-    fixture.status === "scheduled" ||
-    fixture.status === "in_progress" ||
-    fixture.status === "completed" ||
-    fixture.status === "postponed"
-      ? fixture.status
-      : "scheduled",
+  status: (() => {
+    const status = String(fixture.status ?? "scheduled").toLowerCase();
+    return status === "scheduled" || status === "in_progress" || status === "submitted" ||
+      status === "disputed" || status === "rejected" || status === "verified" ||
+      status === "completed" || status === "postponed" ? status : "scheduled";
+  })(),
   scheduledDate: fixture.scheduledDate,
   homeParticipant: toParticipant(fixture.homeParticipant),
   awayParticipant: toParticipant(fixture.awayParticipant),
@@ -149,6 +148,7 @@ export const toTournamentDetail = (
   description: tournament.description,
 
   status: normalizeStatus(tournament.status),
+  lifecycleStatus: tournament.lifecycleStatus ?? tournament.status,
   isRegistrationOpen: tournament.isRegistrationOpen ?? false,
 
   maxParticipants: tournament.maxParticipants,
@@ -188,6 +188,7 @@ export const toTournamentDetail = (
       tournament.viewerContext?.role ??
       tournament.userContext?.role ??
       null,
+    canManage: tournament.viewerContext?.canManage ?? tournament.userContext?.canManage ?? false,
     participantId:
       tournament.viewerContext?.participantId ??
       tournament.userContext?.participantId ??

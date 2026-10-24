@@ -79,6 +79,7 @@ export interface ApiTournament {
   type: string;
   description?: string;
   status: string;
+  lifecycleStatus?: string;
   isRegistrationOpen?: boolean;
   maxParticipants: number;
   participantCount?: number;
@@ -107,6 +108,7 @@ export interface ApiTournament {
   viewerContext?: {
     isRegistered?: boolean;
     role?: string | null;
+    canManage?: boolean;
     participantId?: string | null;
     canJoin?: boolean;
     canLeave?: boolean;
