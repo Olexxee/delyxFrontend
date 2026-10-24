@@ -151,3 +151,32 @@ export const joinGroup = async (groupId: string) => {
   );
   return data;
 };
+
+export type CommunityInvitation = {
+  id: string;
+  communityId: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+  createdAt: string;
+  community: { id: string; name: string; description?: string | null; image?: string | null; _count?: { members: number } };
+  invitedBy: { id: string; username: string; avatar?: string | null };
+};
+
+export const sendCommunityInvitation = async (groupId: string, usernameOrEmail: string) => {
+  const { data } = await api.post<ApiEnvelope<unknown>>(
+    "/api/community/" + encodeURIComponent(groupId) + "/invitations",
+    { usernameOrEmail },
+  );
+  return data.data;
+};
+
+export const getMyCommunityInvitations = async (): Promise<CommunityInvitation[]> => {
+  const { data } = await api.get<ApiEnvelope<CommunityInvitation[]>>("/api/community/invitations/me");
+  return data.data;
+};
+
+export const respondToCommunityInvitation = async (inviteId: string, accept: boolean) => {
+  const { data } = await api.post<ApiEnvelope<{ communityId: string }>>(
+    "/api/community/invitations/" + encodeURIComponent(inviteId) + "/" + (accept ? "accept" : "decline"),
+  );
+  return data.data;
+};
