@@ -1,10 +1,11 @@
 import { useGroupShell } from "@/authContext/GroupShellContext";
 import { useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 import type { MemberSummary } from "@/types/member";
 import { useTheme } from "@/theme/ThemeProvider";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { sendCommunityInvitation } from "@/api/groups.api";
 
 type ApiMember = {
   id: string;
@@ -96,6 +97,20 @@ export default function GroupMembersScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const { shell } = useGroupShell();
   const { data, isLoading, isError, error } = useGroupMembers(groupId);
+  const queryClient = useQueryClient();
+  const [inviteTarget, setInviteTarget] = React.useState("");
+  const [inviteError, setInviteError] = React.useState("");
+  const canInvite = shell.permissions.canInviteMembers;
+  const invite = useMutation({
+    mutationFn: () => sendCommunityInvitation(groupId, inviteTarget.trim()),
+    onSuccess: () => {
+      setInviteTarget("");
+      setInviteError("");
+      Alert.alert("Invitation sent", "The user will receive a community invitation in Delyx.");
+      queryClient.invalidateQueries({ queryKey: ["communityInvitations", groupId] });
+    },
+    onError: (cause) => setInviteError(cause instanceof Error ? cause.message : "Could not send invitation."),
+  });
 
   if (isLoading) {
     return (
@@ -112,6 +127,31 @@ export default function GroupMembersScreen() {
           MEMBERS · {data?.length ?? shell.memberCount}
         </Text>
       </View>
+      {canInvite && (
+        <View style={{ marginHorizontal: 16, marginBottom: 14, padding: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: 10 }}>
+          <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>Invite to this group</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18 }}>Enter their Delyx username or email. They must accept before they become a member.</Text>
+          <TextInput
+            value={inviteTarget}
+            onChangeText={(value) => { setInviteTarget(value); setInviteError(""); }}
+            placeholder="Username or email"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            editable={!invite.isPending}
+            style={{ minHeight: 44, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, color: colors.textPrimary }}
+          />
+          {!!inviteError && <Text style={{ color: "#ef4444", fontSize: 12 }}>{inviteError}</Text>}
+          <Pressable
+            disabled={invite.isPending || inviteTarget.trim().length < 2}
+            onPress={() => invite.mutate()}
+            style={{ minHeight: 42, alignItems: "center", justifyContent: "center", backgroundColor: colors.accent, opacity: invite.isPending || inviteTarget.trim().length < 2 ? 0.55 : 1 }}
+          >
+            {invite.isPending ? <ActivityIndicator color="#090D18" /> : <Text style={{ color: "#090D18", fontSize: 13, fontWeight: "800" }}>Send invitation</Text>}
+          </Pressable>
+        </View>
+      )}
       {isError ? (
         <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
           <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
