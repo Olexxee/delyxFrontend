@@ -1,5 +1,6 @@
 import TournamentDetailTabs from "@/components/tournament/TournamentDetailTabs";
 import TournamentHero from "@/components/tournament/TournamentHeroCard";
+import TournamentMediaGallery from "@/components/tournament/TournamentMediaGallery";
 import TournamentPrimaryAction from "@/components/tournament/TournamentPrimaryAction";
 import TournamentTabContent from "@/components/tournament/TournamentTabContent";
 import {
@@ -203,6 +204,12 @@ export default function TournamentDetailScreen() {
           showProgress={uiConfig?.showProgress}
           showWinnerBanner={uiConfig?.showWinnerBanner}
           showViewerRegistrationState={uiConfig?.showViewerRegistrationState}
+        />
+
+        <TournamentMediaGallery
+          communityId={tournament.groupId}
+          tournamentId={tournament.id}
+          canManage={Boolean(tournament.viewerContext.canManage)}
         />
 
         {Boolean(tournament.viewerContext.canManage) && (
