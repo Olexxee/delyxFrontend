@@ -99,8 +99,8 @@ export default function GroupMembersScreen() {
   const { shell } = useGroupShell();
   const { data, isLoading, isError, error } = useGroupMembers(groupId);
   const queryClient = useQueryClient();
-  const [inviteTarget, setInviteTarget] = React.useState("");
-  const [inviteError, setInviteError] = React.useState("");
+  const [inviteTarget, setInviteTarget] = useState("");
+  const [inviteError, setInviteError] = useState("");
   const canInvite = shell.permissions.canInviteMembers;
   const invite = useMutation({
     mutationFn: () => sendCommunityInvitation(groupId, inviteTarget.trim()),
