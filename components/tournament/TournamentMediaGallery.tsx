@@ -23,7 +23,7 @@ export default function TournamentMediaGallery({ communityId, tournamentId, canM
   const { colors } = useTheme();
   const { data = [], isLoading, isError, uploadMutation, removeMutation } = useTournamentMedia(communityId, tournamentId);
   const mediaByRole = useMemo(
-    () => new Map<TournamentMediaRole, TournamentMediaAsset>(data.map((item) => [item.role, item])),
+    () => new Map<TournamentMediaRole, TournamentMediaAsset>(data.map((item) => [item.role, item] as const)),
     [data],
   );
 
