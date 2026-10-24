@@ -95,7 +95,7 @@ export default function TournamentDetailScreen() {
     if (!Number.isInteger(maxParticipants) || maxParticipants < 2) return Alert.alert("Invalid settings", "Maximum participants must be at least 2.");
     if (![pointsForWin, pointsForDraw, pointsForLoss].every((value) => Number.isInteger(value) && value >= 0)) return Alert.alert("Invalid settings", "Points must be whole numbers and cannot be negative.");
     const dates = [settingsForm.registrationOpensAt, settingsForm.registrationClosesAt, settingsForm.startsAt, settingsForm.endsAt];
-    if (dates.some((value) => !/^\\d{4}-\\d{2}-\\d{2}$/.test(value) || Number.isNaN(new Date(value).getTime()))) return Alert.alert("Invalid settings", "Enter all dates in YYYY-MM-DD format.");
+    if (dates.some((value) => !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(value).getTime()))) return Alert.alert("Invalid settings", "Enter all dates in YYYY-MM-DD format.");
     if (new Date(settingsForm.registrationClosesAt) < new Date(settingsForm.registrationOpensAt)) return Alert.alert("Invalid settings", "Registration must close after it opens.");
     if (new Date(settingsForm.startsAt) <= new Date(settingsForm.registrationClosesAt)) return Alert.alert("Invalid settings", "Tournament start must be after registration closes.");
     if (new Date(settingsForm.endsAt) <= new Date(settingsForm.startsAt)) return Alert.alert("Invalid settings", "Tournament end must be after its start.");
