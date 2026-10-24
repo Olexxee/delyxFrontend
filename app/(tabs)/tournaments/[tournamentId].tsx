@@ -3,7 +3,6 @@ import TournamentHero from "@/components/tournament/TournamentHeroCard";
 import TournamentPrimaryAction from "@/components/tournament/TournamentPrimaryAction";
 import TournamentTabContent from "@/components/tournament/TournamentTabContent";
 import { useJoinTournament, useLeaveTournament, useSubmitTournamentResult, useTournamentDetail, useTournamentLifecycle } from "@/hooks/useTournaments";
-import { UserContext } from "@/authContext/UserContext";
 import { useTheme } from "@/theme/ThemeProvider";
 import type { TournamentTabKey } from "@/types/tournament";
 import { getTournamentUIConfig } from "@/components/ui/TournamentUi";
@@ -27,7 +26,6 @@ const lifecycleActions = {
 export default function TournamentDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { user } = useContext(UserContext);
   const { tournamentId } = useLocalSearchParams<{ tournamentId?: string }>();
   const resolvedTournamentId = typeof tournamentId === "string" ? tournamentId : "";
   const { data: tournament, isLoading, isError, refetch } = useTournamentDetail(resolvedTournamentId);
@@ -77,7 +75,7 @@ export default function TournamentDetailScreen() {
 
   const lifecycleStatus = tournament.lifecycleStatus ?? "";
   const viewerRole = (tournament.viewerContext.role ?? "").toUpperCase();
-  const canManage = tournament.viewerContext.canManage || tournament.createdBy === user?.id || viewerRole === "OWNER" || viewerRole === "ADMIN";
+  const canManage = Boolean(tournament.viewerContext.canManage) || viewerRole === "OWNER" || viewerRole === "ADMIN";
   const actions = canManage ? lifecycleActions[lifecycleStatus as keyof typeof lifecycleActions] ?? [] : [];
 
   return (
