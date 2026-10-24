@@ -150,6 +150,9 @@ export const toTournamentDetail = (
 
   status: normalizeStatus(tournament.status),
   isRegistrationOpen: tournament.isRegistrationOpen ?? false,
+  lifecycleStatus: tournament.lifecycleStatus ?? tournament.status,
+  registrationMode: tournament.registrationMode ?? "OPEN",
+  registrationOpensAt: tournament.registrationOpensAt,
 
   maxParticipants: tournament.maxParticipants,
   participantCount:
