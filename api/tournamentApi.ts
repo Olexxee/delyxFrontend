@@ -3,6 +3,7 @@ import type {
   ApiTournament,
   ApiTournamentDetailResponse,
   ApiTournamentListResponse,
+  ApiPlayerTournamentStatistics,
   TournamentMutationResponse,
 } from "@/types/tournamentApi";
 
@@ -82,6 +83,16 @@ export const fetchAllTournaments = async (): Promise<ApiTournamentListResponse> 
   return listResponse(response.data.data);
 };
 
+export const getTournamentStatistics = async (
+  groupId: string,
+  tournamentId: string,
+): Promise<ApiPlayerTournamentStatistics[]> => {
+  const response = await api.get<ApiEnvelope<ApiPlayerTournamentStatistics[]>>(
+    `/api/community/${encodeURIComponent(groupId)}/competitions/${encodeURIComponent(tournamentId)}/statistics`,
+  );
+  return Array.isArray(response.data.data) ? response.data.data : [];
+};
+
 export const createTournament = async (payload: {
   name: string;
   description?: string;
@@ -117,7 +128,12 @@ export const createTournament = async (payload: {
       registrationClosesAt: payload.registrationDeadline,
     },
   );
-  return response.data;
+
+  return {
+    success: response.data.success,
+    message: response.data.message ?? "Tournament created successfully.",
+    tournament: toApiTournament(response.data.data),
+  };
 };
 
 export const joinTournament = async (
@@ -140,5 +156,9 @@ export const leaveTournament = async (
   const response = await api.post<ApiEnvelope<any>>(
     `/api/competitions/${encodeURIComponent(tournamentId)}/leave`,
   );
-  return { success: true, message: response.data.message ?? "Left competition", tournament: toApiTournament(response.data.data) as any };
+  return {
+    success: true,
+    message: response.data.message ?? "Left competition",
+    tournament: toApiTournament(response.data.data) as any,
+  };
 };

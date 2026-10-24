@@ -16,6 +16,28 @@ export interface TournamentMutationResponse {
   tournament: TournamentDetail;
 }
 
+export interface ApiPlayerTournamentStatistics {
+  competitionId: string;
+  playerId: string;
+  matchesPlayed: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  winRate: number;
+  drawRate: number;
+  lossRate: number;
+  averageGoals: number;
+  averageGoalsAgainst: number;
+  cleanSheets: number;
+  currentStreak: number;
+  longestWinningStreak: number;
+  longestLosingStreak: number;
+}
+
 export interface ApiTournamentFixture {
   id?: string;
   _id?: string;

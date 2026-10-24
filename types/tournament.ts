@@ -15,7 +15,8 @@ export type TournamentTabKey =
   | "participants"
   | "fixtures"
   | "standings"
-  | "results";
+  | "results"
+  | "statistics";
 
 export type TournamentRoundMode = "single" | "double";
 
@@ -41,6 +42,7 @@ export interface PaginationMeta {
 
 export interface TournamentParticipant {
   id: string;
+  userId?: string;
   username: string;
   profilePicture: string | null;
   status: TournamentParticipantStatus;

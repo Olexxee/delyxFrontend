@@ -5,6 +5,7 @@ import TournamentOverviewTab from "./TournamentOverviewTab";
 import TournamentParticipantsTab from "./TournamentParticipantsTab";
 import TournamentResultsTab from "./TournamentResultsTab";
 import TournamentStandingsTab from "./TournamentStandingsTab";
+import TournamentStatisticsTab from "./TournamentStatisticsTab";
 
 interface Props {
   activeTab: TournamentTabKey;
@@ -45,6 +46,9 @@ export default function TournamentTabContent({ activeTab, tournament }: Props) {
 
     case "results":
       return <TournamentResultsTab tournament={tournament} />;
+
+    case "statistics":
+      return <TournamentStatisticsTab tournament={tournament} />;
 
     default:
       return null;

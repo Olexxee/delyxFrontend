@@ -15,6 +15,7 @@ const TAB_LABELS: Record<TournamentTabKey, string> = {
   fixtures: "Fixtures",
   standings: "Standings",
   results: "Results",
+  statistics: "Statistics",
 };
 
 export default function TournamentDetailTabs({
