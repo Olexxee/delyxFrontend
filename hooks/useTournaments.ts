@@ -7,6 +7,7 @@ import {
   leaveTournament,
   runTournamentLifecycleAction,
   submitTournamentResult,
+  updateTournamentSettings,
   type TournamentLifecycleAction,
 } from "@/api/tournamentApi";
 import type {
@@ -159,6 +160,21 @@ export function useLeaveTournament(tournamentId: string) {
       queryClient.invalidateQueries({
         queryKey: tournamentKeys.groupRoot,
       });
+    },
+  });
+}
+
+export function useUpdateTournamentSettings(groupId: string, tournamentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: Parameters<typeof updateTournamentSettings>[2]) =>
+      updateTournamentSettings(groupId, tournamentId, settings),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(tournamentId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.byGroup(groupId) }),
+        queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
+      ]);
     },
   });
 }
