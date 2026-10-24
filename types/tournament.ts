@@ -137,6 +137,8 @@ export interface TournamentDetail {
   participants: TournamentParticipant[];
 
   registrationDeadline: string;
+  registrationOpensAt?: string;
+  registrationMode?: "OPEN" | "APPROVAL" | "INVITE_ONLY";
   startDate: string;
   endDate: string;
 
