@@ -59,6 +59,7 @@ export interface TournamentSettings {
 export interface TournamentViewerContext {
   isRegistered: boolean;
   role: string | null;
+  canManage?: boolean;
   participantId: string | null;
   canJoin: boolean;
   canLeave: boolean;
