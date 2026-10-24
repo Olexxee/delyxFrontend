@@ -81,6 +81,8 @@ export interface ApiTournament {
   status: string;
   lifecycleStatus?: string;
   isRegistrationOpen?: boolean;
+  registrationMode?: "OPEN" | "APPROVAL" | "INVITE_ONLY";
+  registrationOpensAt?: string;
   maxParticipants: number;
   participantCount?: number;
   totalParticipantsCount?: number;
