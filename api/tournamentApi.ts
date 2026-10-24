@@ -55,7 +55,8 @@ const toApiTournament = (item: any): ApiTournament => {
     },
     progress: {
       currentMatchday: competition.runtime?.currentRound ?? competition.runtimeCurrentRound ?? 0,
-      totalMatches: matches.length || item._count?.matches || 0,
+      totalMatchdays: fixtures.reduce((maximum: number, fixture: any) => Math.max(maximum, fixture.round ?? fixture.matchday ?? 0), 0),
+      totalMatches: fixtures.length || matches.length || item._count?.matches || 0,
       completedMatches: matches.filter((match: any) => match.verified || match.status === "VERIFIED" || match.status === "COMPLETED").length,
     },
     viewerContext: item.viewerContext ?? item.userContext,
