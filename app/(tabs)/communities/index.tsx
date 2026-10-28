@@ -10,6 +10,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
+import type { Community } from "@/src/features/communities/api";
+import { CommunityCard } from "@/components/community/CommunityCard";
 import {
   ActivityIndicator,
   Alert,
@@ -221,50 +223,12 @@ export default function CommunitiesScreen() {
               router.push({ pathname: "/(tabs)/group/[groupId]/chat", params: { groupId: item.id } });
 
             return (
-              <View style={[styles.communityRow, { borderBottomColor: colors.border }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={item.isMember ? `Open ${item.name}` : `${item.name} community details`}
-                  disabled={!item.isMember}
-                  onPress={openCommunity}
-                  style={styles.communityPressable}
-                >
-                  <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}>
-                    {item.imageUrl ? (
-                      <Image source={{ uri: item.imageUrl }} style={styles.communityImage} resizeMode="cover" />
-                    ) : (
-                      <UsersRound size={21} color={colors.primary} />
-                    )}
-                  </View>
-                  <View style={styles.communityBody}>
-                    <Text style={[styles.communityName, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {item.description || "A place to connect, organize competitions, and play together."}
-                    </Text>
-                    <Text style={[styles.meta, { color: colors.textSecondary }]}>
-                      {typeof memberCount === "number" ? `${memberCount} members` : "Community"}
-                      {item.visibility === "PRIVATE" ? " · Private" : " · Public"}
-                    </Text>
-                  </View>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isJoining}
-                  onPress={() => item.isMember ? openCommunity() : join.mutate(item.id)}
-                  style={styles.joinButton}
-                >
-                  {isJoining ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <>
-                      <Text style={[styles.joinText, { color: colors.primary }]}>{item.isMember ? "Open" : "Join"}</Text>
-                      <ArrowUpRight size={15} color={colors.primary} />
-                    </>
-                  )}
-                </Pressable>
-              </View>
+              <CommunityCard
+                community={item}
+                isJoining={isJoining}
+                onOpen={openCommunity}
+                onJoin={() => item.isMember ? openCommunity() : join.mutate(item.id)}
+              />
             );
           }}
         />
