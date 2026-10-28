@@ -1,12 +1,20 @@
-import { useTheme } from "@/theme/ThemeProvider";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "@/theme/ThemeProvider";
+import { radius, spacing } from "@/theme";
 
 type Rank = "bronze" | "silver" | "gold" | "elite";
 
+const rankLabel: Record<Rank, string> = {
+  bronze: "BRONZE",
+  silver: "SILVER",
+  gold: "GOLD",
+  elite: "ELITE",
+};
+
 export function RankBadge({ rank }: { rank: Rank }) {
   const { colors } = useTheme();
-
-  const bg = {
+  const rankColor = {
     bronze: colors.bronze,
     silver: colors.silver,
     gold: colors.gold,
@@ -14,21 +22,44 @@ export function RankBadge({ rank }: { rank: Rank }) {
   }[rank];
 
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={styles.text}>{rank.toUpperCase()}</Text>
+    <View
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`Rank: ${rankLabel[rank]}`}
+      style={[
+        styles.badge,
+        {
+          backgroundColor: colors.surfaceLight,
+          borderColor: rankColor,
+          borderRadius: radius.sm,
+        },
+      ]}
+    >
+      <View style={[styles.marker, { backgroundColor: rankColor }]} />
+      <Text style={[styles.text, { color: colors.textPrimary }]}>
+        {rankLabel[rank]}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+  },
+  marker: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.full,
   },
   text: {
-    color: "#000",
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 });
