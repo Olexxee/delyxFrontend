@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
-  Pressable,
   Text,
   TextInput,
   View,
@@ -10,6 +8,7 @@ import {
 import { useRouter } from "expo-router";
 import type { ConversationListItemVM } from "@/view-models/conversation.vm";
 import { ConversationPreviewCard } from "@/components/preview/ConversationPreviewCard";
+import { StatePanel } from "@/components/ui/StatePanel";
 
 type Props = {
   items: ConversationListItemVM[];
@@ -40,24 +39,18 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
-      </View>
-    );
+    return <StatePanel variant="loading" title="Loading chats" />;
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-white text-base mb-4">Failed to load chats</Text>
-        <Pressable
-          onPress={onRetry}
-          className="px-4 py-2 rounded-xl bg-neutral-800"
-        >
-          <Text className="text-white">Retry</Text>
-        </Pressable>
-      </View>
+      <StatePanel
+        variant="error"
+        title="Couldn’t load chats"
+        message="Check your connection and try again."
+        actionLabel="Retry"
+        onAction={onRetry}
+      />
     );
   }
 
@@ -83,11 +76,12 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
           />
         )}
         ListEmptyComponent={
-          <View className="mt-20 items-center px-6">
-            <Text className="text-neutral-500 text-center">
-              No direct messages yet
-            </Text>
-          </View>
+          <StatePanel
+            variant="empty"
+            title={query.trim() ? "No chats match" : "No direct messages yet"}
+            message={query.trim() ? "Try a different search term." : "Your direct conversations will appear here."}
+            compact
+          />
         }
         contentContainerStyle={{ paddingBottom: 32 }}
       />
