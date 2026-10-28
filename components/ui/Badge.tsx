@@ -1,7 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/theme/ThemeProvider";
-import { radius, spacing } from "@/theme";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "danger" | "accent";
 
@@ -52,10 +53,7 @@ export function PillBadge({
       <Text
         style={[
           styles.text,
-          {
-            color: textColor ?? resolved.text,
-            fontSize: compact ? 11 : 12,
-          },
+          { color: textColor ?? resolved.text, fontSize: compact ? 11 : 12 },
         ]}
         numberOfLines={1}
       >
