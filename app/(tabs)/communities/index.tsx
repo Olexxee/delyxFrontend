@@ -11,6 +11,7 @@ import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
 import { CommunityCard } from "@/components/community/CommunityCard";
+import { StatePanel } from "@/components/ui/StatePanel";
 import {
   ActivityIndicator,
   Alert,
@@ -185,20 +186,15 @@ export default function CommunitiesScreen() {
       )}
 
       {communities.isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={[styles.stateDescription, { color: colors.textSecondary }]}>Finding communities…</Text>
-        </View>
+        <StatePanel variant="loading" title="Finding communities" />
       ) : communities.isError ? (
-        <View style={styles.center}>
-          <Text style={[styles.stateTitle, { color: colors.textPrimary }]}>Couldn’t load communities</Text>
-          <Text style={[styles.stateDescription, { color: colors.textSecondary, textAlign: "center" }]}>
-            {communities.error.message}
-          </Text>
-          <Pressable onPress={() => communities.refetch()} style={[styles.retry, { backgroundColor: colors.primary }]}>
-            <Text style={styles.primaryButtonText}>Try again</Text>
-          </Pressable>
-        </View>
+        <StatePanel
+          variant="error"
+          title="Couldn’t load communities"
+          message={communities.error.message}
+          actionLabel="Try again"
+          onAction={() => communities.refetch()}
+        />
       ) : (
         <FlatList
           data={communities.data ?? []}
@@ -207,13 +203,12 @@ export default function CommunitiesScreen() {
           refreshing={communities.isRefetching}
           onRefresh={() => communities.refetch()}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <UsersRound size={28} color={colors.textSecondary} />
-              <Text style={[styles.stateTitle, { color: colors.textPrimary }]}>No communities found</Text>
-              <Text style={[styles.stateDescription, { color: colors.textSecondary, textAlign: "center" }]}>
-                Try another search or create the first community.
-              </Text>
-            </View>
+            <StatePanel
+              variant="empty"
+              title="No communities found"
+              message="Try another search or create the first community."
+              compact
+            />
           }
           renderItem={({ item }) => {
             const isJoining = join.isPending && join.variables === item.id;
