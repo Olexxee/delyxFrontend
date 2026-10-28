@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import type { ConversationListItemVM } from "@/view-models/conversation.vm";
 import { ConversationPreviewCard } from "@/components/preview/ConversationPreviewCard";
 import { StatePanel } from "@/components/ui/StatePanel";
+import { useTheme } from "@/theme/ThemeProvider";
 
 type Props = {
   items: ConversationListItemVM[];
@@ -18,6 +19,7 @@ type Props = {
 
 export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
   const router = useRouter();
+  const { colors } = useTheme();
   const [query, setQuery] = useState("");
 
   const filteredItems = useMemo(() => {
@@ -60,8 +62,9 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
           value={query}
           onChangeText={setQuery}
           placeholder="Search chats"
-          placeholderTextColor="#737373"
-          className="bg-neutral-900 text-white rounded-2xl px-4 py-3"
+          placeholderTextColor={colors.textSecondary}
+          accessibilityLabel="Search chats"
+          style={{ backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 }}
         />
       </View>
 
