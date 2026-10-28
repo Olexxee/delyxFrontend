@@ -67,7 +67,6 @@ export default function TournamentCard({
       padding="lg"
       radiusSize="lg"
       style={[styles.card, style]}
-      accessibilityLabel={`Tournament: ${tournament.name}`}
     >
       <View style={styles.badgeRow}>
         <PillBadge label={tournament.type.replace(/[_-]+/g, " ")} variant="primary" />
