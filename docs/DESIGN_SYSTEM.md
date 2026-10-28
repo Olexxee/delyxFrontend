@@ -102,7 +102,7 @@ Feature-specific components stay in `components/chat`, `components/feed`, `compo
 
 ## Known consistency debt to resolve
 
-The existing base components still contain hardcoded presentation values (notably the primary gradient and input colors). These should be migrated to semantic theme tokens in small, reviewed changes. Do not bulk-rewrite feature screens until the primitives are stabilized and verified.
+In this foundation branch, `AppButton` now uses theme-driven primary, secondary, ghost, and danger variants; `AppInput` now uses theme-driven surface, border, text, and placeholder colors. Remaining work is to audit feature screens for one-off colors and spacing, verify all states in both themes, and migrate those screens incrementally. Do not bulk-rewrite feature screens until the primitives are stabilized and verified.
 
 ## Workflow
 
