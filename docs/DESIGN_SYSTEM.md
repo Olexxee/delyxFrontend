@@ -1,6 +1,6 @@
 # Delyx Design System
 
-Status: foundation baseline — review before applying to all screens.
+Status: shared primitive iteration — validate before migrating feature screens.
 Target: Delyx mobile app (Expo + React Native), eFootball-first community and tournament platform.
 
 ## Product principles
@@ -10,7 +10,7 @@ Target: Delyx mobile app (Expo + React Native), eFootball-first community and to
 - Mobile-first layouts, safe-area aware screens, and keyboard-safe forms.
 - One shared token source; avoid one-off hex colors and arbitrary spacing in screen components.
 - Status, role, tournament, and match states must use consistent semantic treatments.
-- UI primitives must remain presentation-only. Keep API calls, tournament rules, and permission logic in feature modules.
+- UI primitives remain presentation-only. Keep API calls, tournament rules, and permission logic in feature modules.
 
 ## Color tokens
 
@@ -34,7 +34,7 @@ The source of truth currently lives in `theme/color.ts`.
 
 ### Color rules
 
-1. Use semantic tokens from `useTheme()`; do not hardcode colors inside shared components.
+1. Use semantic tokens from `useTheme()`; avoid hardcoded colors inside shared components except contrast-safe foregrounds.
 2. Primary blue is the main interactive color. Acid lime is an accent, not a second primary.
 3. Do not rely on color alone to communicate match or moderation status; pair color with a label/icon.
 4. Verify text contrast for every foreground/background pairing, including disabled, placeholder, and badge states.
@@ -55,29 +55,30 @@ Source of truth: `theme/spacing.ts`, `theme/radius.ts`, and `theme/shapes.tsx`.
 Source of truth: `theme/typography.ts`.
 
 | Style | Size | Line height | Weight |
-|---|---:|---:|---|
+|---|---:|---:|---:|
 | h1 | 28 | 34 | 700 |
 | h2 | 22 | 28 | 600 |
 | body | 16 | 22 | 400 |
 | caption | 12 | — | 400 |
 
-Use a clear hierarchy, short line lengths, and readable contrast. Extend this scale with named styles only when a real recurring need appears; do not create per-screen typography scales.
+Use a clear hierarchy, short line lengths, and readable contrast. Extend this scale with named styles only when a recurring need appears; do not create per-screen typography scales.
 
-## Existing shared component inventory
+## Shared component inventory
 
-Base components are in `components/ui`.
+All shared primitives live in `components/ui` and are exported from `components/ui/index.ts`.
 
-- `AppButton`: primary and ghost actions; loading and disabled states.
-- `AppInput`: text and secure input field.
+- `AppButton`: primary, secondary, ghost, and danger actions; loading/disabled states.
+- `AppInput`: themed text and secure input field.
+- `AppCard`: default, raised, and outlined surfaces with token-based spacing/radius.
 - `Avatar`: image or initials fallback with shared shape tokens.
-- `PillBadge`: compact neutral/status label.
-- `RankBadge`: competitive rank presentation.
+- `PillBadge`: neutral, primary, success, warning, danger, and accent semantic variants; custom colors remain supported.
+- `RankBadge`: rank accent, readable text, and accessible rank label.
 - `RoleBadge`: canonical community role.
-- `TournamentStatusBadge`: tournament lifecycle status.
+- `TournamentStatusBadge`: normalized lifecycle status mapping with a neutral fallback for unknown states.
 - `UnreadBadge`: unread message count.
 - `HeaderAvatar`, `HeaderTitle`: reusable header elements.
 
-Feature-specific components stay in `components/chat`, `components/feed`, `components/tournament`, and other feature folders. Promote a component into the shared UI library only when its behavior and API are genuinely reusable.
+Feature-specific components stay in `components/chat`, `components/feed`, `components/tournament`, and other feature folders. Promote a component into the shared library only when its behavior and API are genuinely reusable.
 
 ## Component contracts
 
@@ -100,15 +101,15 @@ Feature-specific components stay in `components/chat`, `components/feed`, `compo
 - Provide visible focus/pressed/selected states.
 - Respect reduced motion when adding transitions.
 
-## Known consistency debt to resolve
+## Remaining work
 
-In this foundation branch, `AppButton` now uses theme-driven primary, secondary, ghost, and danger variants; `AppInput` now uses theme-driven surface, border, text, and placeholder colors. Remaining work is to audit feature screens for one-off colors and spacing, verify all states in both themes, and migrate those screens incrementally. Do not bulk-rewrite feature screens until the primitives are stabilized and verified.
+The merged foundation has theme-driven `AppButton` and `AppInput`. This iteration adds `AppCard`, semantic badge variants, stronger rank-badge contrast, and normalized tournament-status mapping. These changes have not yet been linted or type-checked. Next, validate imports and component contracts, then audit feature screens for one-off colors/spacing and migrate incrementally. Do not bulk-rewrite feature screens until primitives are stabilized and verified.
 
 ## Workflow
 
 1. Agree token changes here and in `theme/*`.
 2. Update shared primitives first.
-3. Verify both dark and light themes, disabled/loading/error states, and small screens.
+3. Verify both themes, loading/disabled/error states, and small screens.
 4. Migrate feature screens incrementally.
-5. Run Expo lint and app smoke tests in cloud CI or a compatible development environment.
-6. Keep work on `feat/delyx-design-system-foundation`; do not merge into `master` without explicit approval.
+5. Run Expo lint and app smoke tests in cloud CI or a compatible environment.
+6. Keep changes on a feature branch; do not merge into `master` without explicit approval.
