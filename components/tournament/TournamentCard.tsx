@@ -3,7 +3,6 @@ import type { Tournament } from "@/types/tournament";
 import { Calendar, Flame, TrendingUp, Trophy, Users } from "lucide-react-native";
 import React from "react";
 import {
-  ActivityIndicator,
   StyleSheet,
   Text,
   View,
@@ -174,12 +173,14 @@ export default function TournamentCard({
             style={styles.primaryAction}
           />
         ) : null}
-        <AppButton
-          label={isRegistered || !canJoin ? "View tournament" : "View"}
-          onPress={onPress ?? (() => undefined)}
-          variant="secondary"
-          style={styles.viewAction}
-        />
+        {onPress ? (
+          <AppButton
+            label={isRegistered || !canJoin ? "View tournament" : "View"}
+            onPress={onPress}
+            variant="secondary"
+            style={styles.viewAction}
+          />
+        ) : null}
       </View>
     </AppCard>
   );
