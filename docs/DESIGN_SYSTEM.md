@@ -70,6 +70,7 @@ All shared primitives live in `components/ui` and are exported from `components/
 - `AppButton`: primary, secondary, ghost, and danger actions; loading/disabled states.
 - `AppInput`: themed text and secure input field.
 - `AppCard`: default, raised, and outlined surfaces with token-based spacing/radius.
+- `StatePanel`: consistent loading, error/retry, and empty states for feature lists.
 - `Avatar`: image or initials fallback with shared shape tokens.
 - `PillBadge`: neutral, primary, success, warning, danger, and accent semantic variants; custom colors remain supported.
 - `RankBadge`: rank accent, readable text, and accessible rank label.
@@ -103,7 +104,7 @@ Feature-specific components stay in `components/chat`, `components/feed`, `compo
 
 ## Remaining work
 
-The merged foundation has theme-driven `AppButton` and `AppInput`. This iteration adds `AppCard`, semantic badge variants, stronger rank-badge contrast, and normalized tournament-status mapping. These changes have not yet been linted or type-checked. Next, validate imports and component contracts, then audit feature screens for one-off colors/spacing and migrate incrementally. Do not bulk-rewrite feature screens until primitives are stabilized and verified.
+The merged foundation has theme-driven `AppButton` and `AppInput`. This iteration adds `AppCard`, semantic badge variants, stronger rank-badge contrast, normalized tournament-status mapping, a reusable community card, and shared loading/error/empty states. Community discovery and tournament lists now consume the shared components. Cloud CI still needs to confirm lint and type-check results; continue migrating screens incrementally rather than bulk-rewriting them.
 
 ## Workflow
 
