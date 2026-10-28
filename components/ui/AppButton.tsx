@@ -1,14 +1,7 @@
 import { useTheme } from "@/theme/ThemeProvider";
-import { LinearGradient } from "expo-linear-gradient";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextStyle,
-  ViewStyle,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextStyle, ViewStyle } from "react-native";
 
-type ButtonVariant = "primary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 interface AppButtonProps {
   label: string;
@@ -30,61 +23,60 @@ export function AppButton({
   variant = "primary",
 }: AppButtonProps) {
   const { colors } = useTheme();
-  const isGhost = variant === "ghost";
+  const isDisabled = disabled || loading;
 
-  if (isGhost) {
-    return (
-      <Pressable
-        onPress={onPress}
-        disabled={disabled || loading}
-        style={[
-          styles.button,
-          {
-            backgroundColor: "transparent",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.3)",
-            opacity: disabled ? 0.6 : 1,
-          },
-          style,
-        ]}
-      >
-        <Text style={[styles.label, { color: "#ffffff" }, textStyle]}>
-          {loading ? "Loading..." : label}
-        </Text>
-      </Pressable>
-    );
-  }
+  const variantStyle: ViewStyle =
+    variant === "primary"
+      ? { backgroundColor: colors.primary, borderColor: colors.primary }
+      : variant === "secondary"
+        ? { backgroundColor: colors.surfaceLight, borderColor: colors.border }
+        : variant === "danger"
+          ? { backgroundColor: colors.danger, borderColor: colors.danger }
+          : {
+              backgroundColor: "transparent",
+              borderColor: colors.borderLight,
+            };
+
+  const labelColor =
+    variant === "secondary"
+      ? colors.textPrimary
+      : variant === "ghost"
+        ? colors.textPrimary
+        : "#FFFFFF";
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       onPress={onPress}
-      disabled={disabled || loading}
-      style={[styles.button, style, { opacity: disabled ? 0.6 : 1 }]}
+      disabled={isDisabled}
+      style={({ pressed }) => [
+        styles.button,
+        variantStyle,
+        { opacity: isDisabled ? 0.55 : pressed ? 0.82 : 1 },
+        style,
+      ]}
     >
-      <LinearGradient
-        colors={["#3b82f6", "#06b6d4"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradient}
+      <Text
+        style={[styles.label, { color: labelColor }, textStyle]}
+        numberOfLines={1}
       >
-        <Text style={[styles.label, { color: "#ffffff" }, textStyle]}>
-          {loading ? "Loading..." : label}
-        </Text>
-      </LinearGradient>
+        {loading ? "Loading…" : label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 12,
-    overflow: "hidden",
-    width: "100%",
-  },
-  gradient: {
-    paddingVertical: 16,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
   },
   label: {
     fontWeight: "700",
