@@ -9,6 +9,7 @@ import { StatePanel } from "@/components/ui/StatePanel";
 import type { HomeFeedTab } from "@/types/feeds";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
