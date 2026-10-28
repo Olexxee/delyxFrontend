@@ -28,7 +28,6 @@ export default function TournamentRow({
       padding="lg"
       radiusSize="lg"
       style={[styles.card, { borderColor: colors.border }]}
-      accessibilityLabel={`Tournament: ${tournament.name}`}
     >
       <TournamentHeader
         name={tournament.name}
