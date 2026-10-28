@@ -10,7 +10,6 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
-import type { Community } from "@/src/features/communities/api";
 import { CommunityCard } from "@/components/community/CommunityCard";
 import {
   ActivityIndicator,
@@ -217,7 +216,6 @@ export default function CommunitiesScreen() {
             </View>
           }
           renderItem={({ item }) => {
-            const memberCount = item.memberCount ?? item.membersCount;
             const isJoining = join.isPending && join.variables === item.id;
             const openCommunity = () =>
               router.push({ pathname: "/(tabs)/group/[groupId]/chat", params: { groupId: item.id } });
