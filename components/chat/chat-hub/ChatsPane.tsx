@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
-  Pressable,
-  Text,
   TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import type { ConversationListItemVM } from "@/view-models/conversation.vm";
 import { ConversationPreviewCard } from "@/components/preview/ConversationPreviewCard";
+import { StatePanel } from "@/components/ui/StatePanel";
+import { useTheme } from "@/theme/ThemeProvider";
 
 type Props = {
   items: ConversationListItemVM[];
@@ -20,6 +19,7 @@ type Props = {
 
 export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
   const router = useRouter();
+  const { colors } = useTheme();
   const [query, setQuery] = useState("");
 
   const filteredItems = useMemo(() => {
@@ -40,24 +40,18 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
-      </View>
-    );
+    return <StatePanel variant="loading" title="Loading chats" />;
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-white text-base mb-4">Failed to load chats</Text>
-        <Pressable
-          onPress={onRetry}
-          className="px-4 py-2 rounded-xl bg-neutral-800"
-        >
-          <Text className="text-white">Retry</Text>
-        </Pressable>
-      </View>
+      <StatePanel
+        variant="error"
+        title="Couldn’t load chats"
+        message="Check your connection and try again."
+        actionLabel="Retry"
+        onAction={onRetry}
+      />
     );
   }
 
@@ -68,8 +62,9 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
           value={query}
           onChangeText={setQuery}
           placeholder="Search chats"
-          placeholderTextColor="#737373"
-          className="bg-neutral-900 text-white rounded-2xl px-4 py-3"
+          placeholderTextColor={colors.textSecondary}
+          accessibilityLabel="Search chats"
+          style={{ backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 }}
         />
       </View>
 
@@ -83,11 +78,12 @@ export function ChatsPane({ items, isLoading, isError, onRetry }: Props) {
           />
         )}
         ListEmptyComponent={
-          <View className="mt-20 items-center px-6">
-            <Text className="text-neutral-500 text-center">
-              No direct messages yet
-            </Text>
-          </View>
+          <StatePanel
+            variant="empty"
+            title={query.trim() ? "No chats match" : "No direct messages yet"}
+            message={query.trim() ? "Try a different search term." : "Your direct conversations will appear here."}
+            compact
+          />
         }
         contentContainerStyle={{ paddingBottom: 32 }}
       />

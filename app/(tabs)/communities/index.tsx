@@ -10,6 +10,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { uploadMedia } from "@/src/features/media/api";
+import { CommunityCard } from "@/components/community/CommunityCard";
+import { StatePanel } from "@/components/ui/StatePanel";
 import {
   ActivityIndicator,
   Alert,
@@ -184,20 +186,15 @@ export default function CommunitiesScreen() {
       )}
 
       {communities.isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={[styles.stateDescription, { color: colors.textSecondary }]}>Finding communities…</Text>
-        </View>
+        <StatePanel variant="loading" title="Finding communities" />
       ) : communities.isError ? (
-        <View style={styles.center}>
-          <Text style={[styles.stateTitle, { color: colors.textPrimary }]}>Couldn’t load communities</Text>
-          <Text style={[styles.stateDescription, { color: colors.textSecondary, textAlign: "center" }]}>
-            {communities.error.message}
-          </Text>
-          <Pressable onPress={() => communities.refetch()} style={[styles.retry, { backgroundColor: colors.primary }]}>
-            <Text style={styles.primaryButtonText}>Try again</Text>
-          </Pressable>
-        </View>
+        <StatePanel
+          variant="error"
+          title="Couldn’t load communities"
+          message={communities.error.message}
+          actionLabel="Try again"
+          onAction={() => communities.refetch()}
+        />
       ) : (
         <FlatList
           data={communities.data ?? []}
@@ -206,65 +203,25 @@ export default function CommunitiesScreen() {
           refreshing={communities.isRefetching}
           onRefresh={() => communities.refetch()}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <UsersRound size={28} color={colors.textSecondary} />
-              <Text style={[styles.stateTitle, { color: colors.textPrimary }]}>No communities found</Text>
-              <Text style={[styles.stateDescription, { color: colors.textSecondary, textAlign: "center" }]}>
-                Try another search or create the first community.
-              </Text>
-            </View>
+            <StatePanel
+              variant="empty"
+              title="No communities found"
+              message="Try another search or create the first community."
+              compact
+            />
           }
           renderItem={({ item }) => {
-            const memberCount = item.memberCount ?? item.membersCount;
             const isJoining = join.isPending && join.variables === item.id;
             const openCommunity = () =>
               router.push({ pathname: "/(tabs)/group/[groupId]/chat", params: { groupId: item.id } });
 
             return (
-              <View style={[styles.communityRow, { borderBottomColor: colors.border }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={item.isMember ? `Open ${item.name}` : `${item.name} community details`}
-                  disabled={!item.isMember}
-                  onPress={openCommunity}
-                  style={styles.communityPressable}
-                >
-                  <View style={[styles.communityIcon, { backgroundColor: colors.primary + "18" }]}>
-                    {item.imageUrl ? (
-                      <Image source={{ uri: item.imageUrl }} style={styles.communityImage} resizeMode="cover" />
-                    ) : (
-                      <UsersRound size={21} color={colors.primary} />
-                    )}
-                  </View>
-                  <View style={styles.communityBody}>
-                    <Text style={[styles.communityName, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {item.description || "A place to connect, organize competitions, and play together."}
-                    </Text>
-                    <Text style={[styles.meta, { color: colors.textSecondary }]}>
-                      {typeof memberCount === "number" ? `${memberCount} members` : "Community"}
-                      {item.visibility === "PRIVATE" ? " · Private" : " · Public"}
-                    </Text>
-                  </View>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isJoining}
-                  onPress={() => item.isMember ? openCommunity() : join.mutate(item.id)}
-                  style={styles.joinButton}
-                >
-                  {isJoining ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <>
-                      <Text style={[styles.joinText, { color: colors.primary }]}>{item.isMember ? "Open" : "Join"}</Text>
-                      <ArrowUpRight size={15} color={colors.primary} />
-                    </>
-                  )}
-                </Pressable>
-              </View>
+              <CommunityCard
+                community={item}
+                isJoining={isJoining}
+                onOpen={openCommunity}
+                onJoin={() => item.isMember ? openCommunity() : join.mutate(item.id)}
+              />
             );
           }}
         />

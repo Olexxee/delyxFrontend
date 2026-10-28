@@ -1,0 +1,49 @@
+name: Delyx UI Validation
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "components/**"
+      - "theme/**"
+      - "types/**"
+      - "hooks/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/ui-validation.yml"
+  push:
+    branches: ["feat/delyx-ui-primitives-v2"]
+
+jobs:
+  typecheck:
+    name: TypeScript check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+  lint:
+    name: Expo lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint

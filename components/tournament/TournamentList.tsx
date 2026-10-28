@@ -1,15 +1,8 @@
-import { useTheme } from "@/theme/ThemeProvider";
-import type { TournamentSummary } from "@/types/tournament";
-import { Trophy } from "lucide-react-native";
 import React from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet } from "react-native";
+import type { TournamentSummary } from "@/types/tournament";
+import { useTheme } from "@/theme/ThemeProvider";
+import { StatePanel } from "@/components/ui/StatePanel";
 import TournamentRow from "./Tournamentrow";
 
 interface TournamentListProps {
@@ -19,19 +12,6 @@ interface TournamentListProps {
   refreshing: boolean;
   onRefresh: () => void;
   onSelect: (tournament: TournamentSummary) => void;
-}
-
-function TournamentEmpty() {
-  const { colors } = useTheme();
-
-  return (
-    <View style={styles.empty}>
-      <Trophy size={40} color={colors.border} strokeWidth={1.5} />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-        No tournaments yet.
-      </Text>
-    </View>
-  );
 }
 
 export function TournamentList({
@@ -45,20 +25,18 @@ export function TournamentList({
   const { colors } = useTheme();
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
+    return <StatePanel variant="loading" title="Loading tournaments" />;
   }
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-          Failed to load tournaments.
-        </Text>
-      </View>
+      <StatePanel
+        variant="error"
+        title="Couldn’t load tournaments"
+        message="Check your connection and try again."
+        actionLabel="Try again"
+        onAction={onRefresh}
+      />
     );
   }
 
@@ -76,44 +54,25 @@ export function TournamentList({
         />
       }
       renderItem={({ item }) => (
-        <TournamentRow
-          tournament={item}
-          onView={() => onSelect(item)}
-        />
+        <TournamentRow tournament={item} onView={() => onSelect(item)} />
       )}
-      ListEmptyComponent={<TournamentEmpty />}
+      ListEmptyComponent={
+        <StatePanel
+          variant="empty"
+          title="No tournaments yet"
+          message="When tournaments become available, they’ll appear here."
+          compact
+        />
+      }
     />
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-
-  errorText: {
-    fontSize: 14,
-    textAlign: "center",
-  },
-
   list: {
     padding: 16,
     paddingBottom: 40,
     flexGrow: 1,
-  },
-
-  empty: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 60,
     gap: 12,
-  },
-
-  emptyText: {
-    fontSize: 14,
-    textAlign: "center",
   },
 });

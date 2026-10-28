@@ -1,34 +1,47 @@
 import React from "react";
-import { PillBadge } from "./Badge";
-import { useTheme } from "@/theme/ThemeProvider";
+import { PillBadge, type BadgeVariant } from "./Badge";
 
 type TournamentStatusBadgeProps = {
   status?: string | null;
 };
 
+const statusVariants: Record<string, BadgeVariant> = {
+  ongoing: "success",
+  live: "success",
+  in_progress: "success",
+  registration: "primary",
+  open: "primary",
+  upcoming: "warning",
+  pending: "warning",
+  completed: "neutral",
+  finished: "neutral",
+  cancelled: "danger",
+  canceled: "danger",
+  rejected: "danger",
+  draft: "neutral",
+};
+
+function normalizeStatus(status: string): string {
+  return status.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function formatStatus(status: string): string {
+  return status
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 export function TournamentStatusBadge({ status }: TournamentStatusBadgeProps) {
-  const { colors } = useTheme();
+  if (!status?.trim()) return null;
 
-  if (!status) return null;
-
-  const normalized = status.toLowerCase();
-
-  const backgroundColor =
-    normalized === "ongoing"
-      ? colors.primary
-      : normalized === "registration"
-        ? colors.accent
-        : normalized === "upcoming"
-          ? colors.warning
-          : colors.surfaceLight;
-
-  const textColor = normalized === "completed" ? colors.textSecondary : "#fff";
+  const normalized = normalizeStatus(status);
 
   return (
     <PillBadge
-      label={status}
-      backgroundColor={backgroundColor}
-      textColor={textColor}
+      label={formatStatus(status)}
+      variant={statusVariants[normalized] ?? "neutral"}
     />
   );
 }

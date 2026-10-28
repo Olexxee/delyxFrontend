@@ -1,13 +1,10 @@
 import {
-  ActivityIndicator,
   FlatList,
-  Pressable,
-  Text,
-  View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import type { GroupListItemVM } from "@/view-models/group.vm";
 import { GroupPreviewCard } from "@/components/preview/GroupPreviewCard";
+import { StatePanel } from "@/components/ui/StatePanel";
 
 type Props = {
   items: GroupListItemVM[];
@@ -20,31 +17,25 @@ export function GroupsPane({ items, isLoading, isError, onRetry }: Props) {
   const router = useRouter();
 
   const handleOpenGroup = (item: GroupListItemVM) => {
-  router.push({
-    pathname: "/(tabs)/group/[groupId]/chat",
-    params: { groupId: item.groupId },
-  });
-};
+    router.push({
+      pathname: "/(tabs)/group/[groupId]/chat",
+      params: { groupId: item.groupId },
+    });
+  };
 
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
-      </View>
-    );
+    return <StatePanel variant="loading" title="Loading groups" />;
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-white text-base mb-4">Failed to load groups</Text>
-        <Pressable
-          onPress={onRetry}
-          className="px-4 py-2 rounded-xl bg-neutral-800"
-        >
-          <Text className="text-white">Retry</Text>
-        </Pressable>
-      </View>
+      <StatePanel
+        variant="error"
+        title="Couldn’t load groups"
+        message="Check your connection and try again."
+        actionLabel="Retry"
+        onAction={onRetry}
+      />
     );
   }
 
@@ -56,11 +47,7 @@ export function GroupsPane({ items, isLoading, isError, onRetry }: Props) {
         <GroupPreviewCard item={item} onPress={handleOpenGroup} />
       )}
       ListEmptyComponent={
-        <View className="mt-20 items-center px-6">
-          <Text className="text-neutral-500 text-center">
-            You haven't joined any groups yet
-          </Text>
-        </View>
+        <StatePanel variant="empty" title="No groups yet" message="Groups you join will appear here." compact />
       }
       contentContainerStyle={{ paddingBottom: 32 }}
     />
