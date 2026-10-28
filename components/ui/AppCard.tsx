@@ -1,5 +1,5 @@
 import React, { type ReactNode } from "react";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
@@ -9,7 +9,7 @@ export type AppCardProps = {
   variant?: "default" | "raised" | "outlined";
   padding?: keyof typeof spacing;
   radiusSize?: keyof typeof radius;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 };
 
