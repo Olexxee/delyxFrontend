@@ -78,6 +78,7 @@ All shared primitives live in `components/ui` and are exported from `components/
 - `TournamentStatusBadge`: normalized lifecycle status mapping with a neutral fallback for unknown states.
 - `UnreadBadge`: unread message count.
 - `HeaderAvatar`, `HeaderTitle`: reusable header elements.
+- `StatePanel`: shared loading, retryable error, and empty states.
 
 Feature-specific components stay in `components/chat`, `components/feed`, `components/tournament`, and other feature folders. Promote a component into the shared library only when its behavior and API are genuinely reusable.
 
@@ -104,7 +105,7 @@ Feature-specific components stay in `components/chat`, `components/feed`, `compo
 
 ## Remaining work
 
-The merged foundation has theme-driven `AppButton` and `AppInput`. This iteration adds `AppCard`, semantic badge variants, stronger rank-badge contrast, normalized tournament-status mapping, a reusable community card, and shared loading/error/empty states. Community discovery and tournament lists now consume the shared components. Cloud CI still needs to confirm lint and type-check results; continue migrating screens incrementally rather than bulk-rewriting them.
+The merged foundation has theme-driven `AppButton` and `AppInput`. This iteration adds `AppCard`, semantic badge variants, stronger rank-badge contrast, normalized tournament-status mapping, a reusable community card, and shared loading/error/empty states. Community discovery, tournament lists, chat/group panes, and group member lists now consume shared components. Chat headers use accessible icon controls and chat search respects theme tokens. Cloud CI still needs to confirm lint and type-check results; continue migrating screens incrementally rather than bulk-rewriting them.
 
 ## Workflow
 
