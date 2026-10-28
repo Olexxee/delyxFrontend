@@ -5,6 +5,7 @@ import { FeedHeroBanner } from "@/components/feed/FeedHeroBanner";
 import { PriorityActionRail } from "@/components/feed/PriorityActionRail";
 import { useHomeFeed } from "@/hooks/useHomeFeed";
 import { useTheme } from "@/theme/ThemeProvider";
+import { StatePanel } from "@/components/ui/StatePanel";
 import type { HomeFeedTab } from "@/types/feeds";
 import React, { useMemo, useState } from "react";
 import {
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const {
     data,
     isLoading,
+    isError,
     isRefetching,
     refetch,
     fetchNextPage,
@@ -107,9 +109,15 @@ export default function HomeScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
+        <StatePanel variant="loading" title="Loading your feed" />
+      ) : isError ? (
+        <StatePanel
+          variant="error"
+          title="Couldn’t load your feed"
+          message="Check your connection and try again."
+          actionLabel="Retry"
+          onAction={() => { void refetch(); }}
+        />
       ) : (
         <ScrollView
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
@@ -120,6 +128,14 @@ export default function HomeScreen() {
         >
           <PriorityActionRail actions={actions} />
           {banner ? <FeedHeroBanner item={banner} /> : null}
+          {items.length === 0 && !banner && actions.length === 0 ? (
+            <StatePanel
+              variant="empty"
+              title="Your feed is quiet"
+              message="Follow communities and join tournaments to see activity here."
+              compact
+            />
+          ) : null}
           {items.map((item) => <FeedCardRenderer key={item.id} item={item} />)}
           {isFetchingNextPage ? (
             <View style={styles.loadMore}>
@@ -155,6 +171,5 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontWeight: "800" },
   activeIndicator: { position: "absolute", bottom: -3, width: 45, height: 3, borderRadius: 2 },
   scrollContent: { paddingBottom: 32 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   loadMore: { paddingVertical: 16 },
 });
