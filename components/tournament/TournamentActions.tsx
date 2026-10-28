@@ -1,6 +1,6 @@
-import { useTheme } from "@/theme/ThemeProvider";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { AppButton } from "@/components/ui/AppButton";
 
 interface TournamentActionsProps {
   canJoin: boolean;
@@ -13,41 +13,24 @@ export default function TournamentActions({
   onJoin,
   onView,
 }: TournamentActionsProps) {
-  const { colors } = useTheme();
-
   return (
     <View style={styles.row}>
-      {canJoin ? (
-        <Pressable
+      {canJoin && onJoin ? (
+        <AppButton
+          label="Join"
           onPress={onJoin}
-          disabled={!onJoin}
-          style={[
-            styles.joinBtn,
-            {
-              backgroundColor: colors.accent,
-              opacity: onJoin ? 1 : 0.6,
-            },
-          ]}
-        >
-          <Text style={styles.joinBtnText}>Join</Text>
-        </Pressable>
+          variant="primary"
+          style={styles.button}
+        />
       ) : null}
-
-      <Pressable
-        onPress={onView}
-        disabled={!onView}
-        style={[
-          styles.viewBtn,
-          {
-            borderColor: colors.border,
-            opacity: onView ? 1 : 0.6,
-          },
-        ]}
-      >
-        <Text style={[styles.viewBtnText, { color: colors.accent }]}>
-          View
-        </Text>
-      </Pressable>
+      {onView ? (
+        <AppButton
+          label="View"
+          onPress={onView}
+          variant="ghost"
+          style={styles.button}
+        />
+      ) : null}
     </View>
   );
 }
@@ -60,24 +43,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
-  joinBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  joinBtnText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  viewBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  viewBtnText: {
-    fontWeight: "600",
-    fontSize: 14,
+  button: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
   },
 });
