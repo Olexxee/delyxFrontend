@@ -1,7 +1,7 @@
 import React, { type ReactNode } from "react";
 import { StyleSheet, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme/ThemeProvider";
-import { radius } from "@/theme";
+import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
 
 export type AppCardProps = {
