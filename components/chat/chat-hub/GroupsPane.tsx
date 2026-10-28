@@ -1,6 +1,5 @@
 import {
   FlatList,
-  View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import type { GroupListItemVM } from "@/view-models/group.vm";
@@ -18,11 +17,11 @@ export function GroupsPane({ items, isLoading, isError, onRetry }: Props) {
   const router = useRouter();
 
   const handleOpenGroup = (item: GroupListItemVM) => {
-  router.push({
-    pathname: "/(tabs)/group/[groupId]/chat",
-    params: { groupId: item.groupId },
-  });
-};
+    router.push({
+      pathname: "/(tabs)/group/[groupId]/chat",
+      params: { groupId: item.groupId },
+    });
+  };
 
   if (isLoading) {
     return <StatePanel variant="loading" title="Loading groups" />;
