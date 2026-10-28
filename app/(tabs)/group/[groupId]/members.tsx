@@ -7,6 +7,7 @@ import type { MemberSummary } from "@/types/member";
 import { useTheme } from "@/theme/ThemeProvider";
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { sendCommunityInvitation } from "@/api/groups.api";
+import { StatePanel } from "@/components/ui/StatePanel";
 
 type ApiMember = {
   id: string;
@@ -114,15 +115,11 @@ export default function GroupMembersScreen() {
   });
 
   if (isLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#000" }}>
-        <ActivityIndicator color="#fff" />
-      </View>
-    );
+    return <StatePanel variant="loading" title="Loading members" />;
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
         <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: "700", letterSpacing: 1 }}>
           MEMBERS · {data?.length ?? shell.memberCount}
@@ -154,14 +151,12 @@ export default function GroupMembersScreen() {
         </View>
       )}
       {isError ? (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
-          <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
-            Could not load group members
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
-            {error instanceof Error ? error.message : "Please try again."}
-          </Text>
-        </View>
+        <StatePanel
+          variant="error"
+          title="Couldn’t load group members"
+          message={error instanceof Error ? error.message : "Please try again."}
+          compact
+        />
       ) : (
         <FlatList
           data={data ?? []}
@@ -169,7 +164,7 @@ export default function GroupMembersScreen() {
           renderItem={({ item }) => <MemberRow item={item} />}
           contentContainerStyle={{ paddingBottom: 32 }}
           ListEmptyComponent={
-            <Text style={{ color: colors.textSecondary, padding: 16 }}>No members found.</Text>
+            <StatePanel variant="empty" title="No members found" message="Members will appear here once they join." compact />
           }
         />
       )}
