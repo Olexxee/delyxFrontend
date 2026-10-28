@@ -1,7 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/theme/ThemeProvider";
-import { radius, spacing } from "@/theme";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type Rank = "bronze" | "silver" | "gold" | "elite";
 
