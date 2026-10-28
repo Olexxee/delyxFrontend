@@ -24,11 +24,9 @@ export function AppInput({
   const { colors } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
 
-  // Render icon as FontAwesome or a shape
   const renderIcon = () => {
     if (!icon) return null;
 
-    // Icon mapping for common icons
     const iconMap: Record<string, string> = {
       mail: "✉",
       lock: "🔒",
@@ -42,10 +40,7 @@ export function AppInput({
             <View
               style={[
                 styles.shape,
-                {
-                  borderRadius: 50,
-                  backgroundColor: "rgba(255, 255, 255, 0.7)",
-                },
+                { borderRadius: 50, backgroundColor: colors.textSecondary },
               ]}
             />
           );
@@ -54,7 +49,7 @@ export function AppInput({
             <View
               style={[
                 styles.shape,
-                { backgroundColor: "rgba(255, 255, 255, 0.7)" },
+                { backgroundColor: colors.textSecondary },
               ]}
             />
           );
@@ -63,54 +58,64 @@ export function AppInput({
             <View
               style={[
                 styles.triangle,
-                { borderBottomColor: "rgba(255, 255, 255, 0.7)" },
+                { borderBottomColor: colors.textSecondary },
               ]}
             />
           );
         case Shapes.x:
           return (
-            <Text
-              style={{ color: "rgba(255, 255, 255, 0.7)", fontWeight: "700" }}
-            >
+            <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
               X
             </Text>
           );
       }
     }
 
-    // Use mapped icon or fallback to the icon string
     const displayIcon = iconMap[icon as string] || icon;
     return (
-      <Text style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: 18 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
         {displayIcon}
       </Text>
     );
   };
 
-  const isPassword = secureTextEntry && !showPassword;
+  const isPassword = Boolean(secureTextEntry && !showPassword);
 
   return (
-    <View style={[styles.container, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+        style,
+      ]}
+    >
       {icon && <View style={styles.iconWrapper}>{renderIcon()}</View>}
       <TextInput
+        accessibilityLabel={props.accessibilityLabel ?? props.placeholder}
+        {...props}
         style={[
           styles.input,
           {
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            color: "#ffffff",
-            borderColor: "rgba(255, 255, 255, 0.2)",
+            color: colors.textPrimary,
           },
+          props.style,
         ]}
-        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+        placeholderTextColor={colors.textSecondary}
         secureTextEntry={isPassword}
-        {...props}
       />
       {secureTextEntry && (
         <TouchableOpacity
-          onPress={() => setShowPassword(!showPassword)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+          onPress={() => setShowPassword((visible) => !visible)}
           style={styles.eyeButton}
         >
-          <Text style={styles.eyeIcon}>{showPassword ? "👁" : "👁‍🗨"}</Text>
+          <Text style={[styles.eyeIcon, { color: colors.textSecondary }]}>
+            {showPassword ? "Hide" : "Show"}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -124,10 +129,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     overflow: "hidden",
+    minHeight: 48,
   },
   input: {
     flex: 1,
-    padding: 14,
+    minWidth: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 15,
   },
   iconWrapper: {
@@ -135,11 +143,12 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   eyeButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   eyeIcon: {
-    fontSize: 18,
-    opacity: 0.7,
+    fontSize: 12,
+    fontWeight: "600",
   },
   shape: {
     width: 16,
