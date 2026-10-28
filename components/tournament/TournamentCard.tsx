@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
   type ViewStyle,
 } from "react-native";
 import { useJoinTournament } from "@/hooks/useTournaments";
@@ -17,7 +18,7 @@ import { TournamentStatusBadge } from "@/components/ui/TournamentStatusBadge";
 interface TournamentCardProps {
   tournament: Tournament;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 function fmt(iso?: string | null) {
